@@ -1,0 +1,31 @@
+import { NextResponse } from "next/server";
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    
+    // Enviamos la idea al backend de Python (FastAPI)
+    const backendResponse = await fetch("http://localhost:8000/proyectos/iniciar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        idea: body.idea,
+        stack: body.stack,
+        nombre: body.nombre,
+        alumnoId: body.alumnoId || "estudiante_demo"
+      })
+    });
+
+    if (!backendResponse.ok) {
+      const errorData = await backendResponse.json();
+      return NextResponse.json({ error: errorData.detail || "Error en el backend de Python" }, { status: backendResponse.status });
+    }
+
+    const data = await backendResponse.json();
+    return NextResponse.json(data);
+
+  } catch (error) {
+    console.error("Error proxying to Python backend:", error);
+    return NextResponse.json({ error: "No se pudo conectar con el servidor de IA (Python)" }, { status: 500 });
+  }
+}

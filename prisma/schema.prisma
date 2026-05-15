@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  role        String   // "estudiante", "docente", "administrador"
+  firebaseUid String   @unique
+  createdAt   DateTime @default(now())
+  proyectos   Proyecto[]
+  validaciones ValidacionDoc[]
+}
+
+model Proyecto {
+  id             String   @id @default(cuid())
+  alumnoId       String
+  alumno         User     @relation(fields: [alumnoId], references: [id])
+  tema           String
+  descripcion    String
+  stack          String[]
+  estado         String   // "draft", "processing", "pending_approval", "approved", "active"
+  scoreValidator Int?
+  createdAt      DateTime @default(now())
+  hitos          Hito[]
+  historias      HistoriaUsuario[]
+  agentStates    AgentState[]
+  validaciones   ValidacionDoc[]
+}
+
+model Hito {
+  id                 String   @id @default(cuid())
+  proyectoId         String
+  proyecto           Proyecto @relation(fields: [proyectoId], references: [id])
+  nombre             String
+  descripcion        String
+  tareas             String[]
+  semana             Int
+  completado         Boolean  @default(false)
+  evidenciasEsperadas String[]
+  evidencias         Evidencia[]
+}
+
+model HistoriaUsuario {
+  id          String   @id @default(cuid())
+  proyectoId  String
+  proyecto    Proyecto @relation(fields: [proyectoId], references: [id])
+  titulo      String
+  como        String
+  quiero      String
+  para        String
+  criterios   String[]
+  prioridad   String   // "Alta", "Media", "Baja"
+}
+
+model Evidencia {
+  id              String   @id @default(cuid())
+  hitoId          String
+  hito            Hito     @relation(fields: [hitoId], references: [id])
+  tipo            String
+  url             String
+  estado          String   // "pendiente", "aprobada", "rechazada"
+  competenciasIds String[]
+}
+
+model ValidacionDoc {
+  id         String   @id @default(cuid())
+  proyectoId String
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id])
+  docenteId  String
+  docente    User     @relation(fields: [docenteId], references: [id])
+  aprobado   Boolean
+  comentario String
+  createdAt  DateTime @default(now())
+}
+
+model AgentState {
+  id         String   @id @default(cuid())
+  proyectoId String
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id])
+  phase      String
+  stateJson  Json
+  createdAt  DateTime @default(now())
+}
+
+model AuditoriaLog {
+  id        String   @id @default(cuid())
+  entidad   String
+  entidadId String
+  accion    String
+  userId    String
+  createdAt DateTime @default(now())
+}

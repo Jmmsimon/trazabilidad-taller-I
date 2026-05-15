@@ -1,0 +1,8 @@
+{
+  "node_version": "20",
+  "dockerfile_lines": [],
+  "graphs": {
+    "mi_agente_universitario": "./langgraph-test/agent.ts"
+  },
+  "env": ".env"
+}

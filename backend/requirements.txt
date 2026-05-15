@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+asyncpg
+python-dotenv
+langchain-anthropic
+langgraph
+anthropic
+pydantic
+pydantic-settings
+prisma
