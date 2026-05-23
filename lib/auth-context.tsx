@@ -4,6 +4,7 @@ import {
   User,
   onAuthStateChanged,
   signInWithRedirect,
+  getRedirectResult,
   signOut,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -31,6 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Es vital llamar a getRedirectResult para procesar el login de signInWithRedirect
+    getRedirectResult(auth).catch(console.error);
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
