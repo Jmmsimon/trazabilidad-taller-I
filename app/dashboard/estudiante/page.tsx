@@ -128,22 +128,44 @@ export default function EstudianteDashboard() {
     data: null,
   });
 
+  // Estados para la carga asíncrona con progreso real en Fase B
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationDetail, setGenerationDetail] = useState("Iniciando agentes de co-creación...");
+  const [activeAgent, setActiveAgent] = useState<string | null>("drafter");
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
   // ── Poll discovery (Fase B) ──────────────────────────────
   useEffect(() => {
     if (phase !== "B" || !projectId) return;
+    setGenerationProgress(5);
+    setGenerationDetail("Iniciando agentes de co-creación...");
+    setActiveAgent("drafter");
+    setGenerationError(null);
+
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/proyectos/${projectId}/status`);
         const data = await res.json();
+        
+        if (data.status === "error") {
+          setGenerationError(data.error || "Ocurrió un error inesperado al generar el plan maestro.");
+          clearInterval(interval);
+          return;
+        }
+
+        if (data.progress !== undefined) setGenerationProgress(data.progress);
+        if (data.status_detail !== undefined) setGenerationDetail(data.status_detail);
+        if (data.active_agent !== undefined) setActiveAgent(data.active_agent);
+
         if (data.status === "pending_approval") {
-          setPlan({ ...data.propuesta, scoreValidator: data.scoreValidator ?? 0 });
+          setPlan({ ...data.propuesta, scoreValidator: data.scoreValidator ?? 0, backlog_scrum: data.backlog_scrum });
           setPhase("C");
           clearInterval(interval);
         }
       } catch (err) {
         console.error("Error polling discovery:", err);
       }
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [phase, projectId]);
 
@@ -312,28 +334,113 @@ export default function EstudianteDashboard() {
 
           {/* ── FASE B ─────────────────────────────────────────── */}
           {phase === "B" && (
-            <motion.div key="phaseB" className="max-w-md mx-auto text-center">
-              <div className="mb-12 relative">
-                <div className="w-24 h-24 border-4 border-zinc-800 border-t-indigo-500 rounded-full animate-spin mx-auto" />
-                <Activity className="w-8 h-8 text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-              </div>
-              <h2 className="text-2xl font-bold mb-8">Nuestros agentes están trabajando...</h2>
-              <div className="space-y-4 text-left">
-                {["Drafter", "Validator", "Product Owner", "Sistema"].map((agent, i) => (
-                  <div
-                    key={agent}
-                    className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 flex items-center gap-4"
+            <motion.div
+              key="phaseB"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="max-w-md mx-auto"
+            >
+              {generationError ? (
+                <div className="backdrop-blur-xl bg-red-950/20 border border-red-500/20 rounded-3xl p-8 text-center shadow-2xl space-y-6">
+                  <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl mx-auto flex items-center justify-center text-red-400">
+                    <AlertCircle className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-red-400 mb-2">Error de Generación</h2>
+                    <p className="text-zinc-400 text-xs leading-relaxed max-h-48 overflow-y-auto font-mono bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/40 text-left">
+                      {generationError}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPhase("A")}
+                    className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold py-3 rounded-xl transition-all border border-zinc-700/50"
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/20 text-indigo-400">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-zinc-500">AG-00{i + 1} {agent}</div>
-                      <div className="text-sm text-zinc-200">Procesando información...</div>
+                    Volver al Formulario
+                  </button>
+                </div>
+              ) : (
+                <div className="backdrop-blur-xl bg-zinc-900/40 border border-zinc-800/50 rounded-3xl p-8 shadow-2xl text-center space-y-8">
+                  {/* Progress Ring / Percentage */}
+                  <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="52"
+                        className="stroke-zinc-800/50 fill-none"
+                        strokeWidth="6"
+                      />
+                      <motion.circle
+                        cx="64"
+                        cy="64"
+                        r="52"
+                        className="stroke-indigo-500 fill-none"
+                        strokeWidth="6"
+                        strokeDasharray={326.7}
+                        initial={{ strokeDashoffset: 326.7 }}
+                        animate={{ strokeDashoffset: 326.7 - (326.7 * generationProgress) / 100 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute text-3xl font-extrabold text-white font-mono">
+                      {generationProgress}%
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div>
+                    <h2 className="text-xl font-bold text-white mb-2">Co-creando plan maestro...</h2>
+                    <p className="text-xs text-indigo-400 h-8 flex items-center justify-center font-medium animate-pulse">
+                      {generationDetail}
+                    </p>
+                  </div>
+
+                  {/* Agentes list */}
+                  <div className="space-y-3 text-left">
+                    {[
+                      { id: "drafter", name: "Drafter (AG-001)", desc: "Diseñando arquitectura y roadmap" },
+                      { id: "validator", name: "Validator (AG-002)", desc: "Evaluando viabilidad y sílabo" },
+                      { id: "po", name: "Product Owner (AG-003)", desc: "Generando Backlog Scrum" }
+                    ].map((agent, i) => {
+                      const isCompleted = 
+                        (agent.id === "drafter" && (activeAgent === "validator" || activeAgent === "po")) ||
+                        (agent.id === "validator" && activeAgent === "po") ||
+                        (generationProgress >= 90);
+                      const isActive = activeAgent === agent.id && !isCompleted;
+                      
+                      return (
+                        <div
+                          key={agent.id}
+                          className={`border rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 ${
+                            isCompleted ? "bg-emerald-500/5 border-emerald-500/10 text-zinc-300" :
+                            isActive ? "bg-indigo-500/5 border-indigo-500/20 text-zinc-100 ring-1 ring-indigo-500/10" :
+                            "bg-zinc-950/20 border-zinc-800/40 text-zinc-500"
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            isCompleted ? "bg-emerald-500/10 text-emerald-400" :
+                            isActive ? "bg-indigo-500/10 text-indigo-400" :
+                            "bg-zinc-900 text-zinc-600"
+                          }`}>
+                            {isCompleted ? (
+                              <CheckCircle2 className="w-5 h-5" />
+                            ) : isActive ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <div className="w-2 h-2 rounded-full bg-current" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold">{agent.name}</div>
+                            <div className="text-[11px] opacity-75 truncate">{agent.desc}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
