@@ -19,9 +19,9 @@ def get_llm():
     google_key = os.getenv("GOOGLE_API_KEY")
     if google_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
-        print("🟢 Usando Google Gemini 1.5 Pro (pago)")
+        print("🟢 Usando Google Gemini 1.5 Flash (pago)")
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-pro-latest",
+            model="gemini-1.5-flash",
             temperature=0.2,
             google_api_key=google_key,
         )
@@ -67,9 +67,9 @@ def _get_mock_response(system_prompt: str) -> str:
     
     if "drafter" in prompt_lower or "propuesta" in prompt_lower:
         return json.dumps({
-            "tema": "Sistema de Gestión Académica con IA",
-            "descripcion": "Plataforma web que integra agentes de IA para automatizar el seguimiento de proyectos académicos, evaluando el progreso mediante análisis de commits y documentación.",
-            "stack": ["Next.js", "FastAPI", "LangGraph", "PostgreSQL"],
+            "tema": "⚠️ MOCK DATA - FALLÓ LA API DE GOOGLE",
+            "descripcion": "La conexión a Gemini falló. Esto es una respuesta simulada por seguridad para no romper la interfaz visual. El proyecto que pediste no se pudo procesar.",
+            "stack": ["Mock", "Fake", "Error"],
             "hitos": [
                 {
                     "id": str(uuid.uuid4()),
