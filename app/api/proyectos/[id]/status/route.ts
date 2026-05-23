@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -9,7 +11,7 @@ export async function GET(
     const { id } = await params;
     
     // Consultamos el estado al backend de Python (FastAPI)
-    const backendResponse = await fetch(`http://localhost:8000/proyectos/${id}/status`, {
+    const backendResponse = await fetch(`${BACKEND_URL}/proyectos/${id}/status`, {
       cache: 'no-store'
     });
 

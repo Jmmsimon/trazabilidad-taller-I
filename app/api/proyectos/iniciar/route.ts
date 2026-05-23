@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     
     // Enviamos la idea al backend de Python (FastAPI)
-    const backendResponse = await fetch("http://localhost:8000/proyectos/iniciar", {
+    const backendResponse = await fetch(`${BACKEND_URL}/proyectos/iniciar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
