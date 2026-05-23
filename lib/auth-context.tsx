@@ -34,6 +34,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
+        // Configurar cookie para el middleware de Next.js
+        const token = await firebaseUser.getIdToken();
+        await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token })
+        });
+
         // Obtener o crear perfil en Firestore
         const ref = doc(db, "usuarios", firebaseUser.uid);
         const snap = await getDoc(ref);
