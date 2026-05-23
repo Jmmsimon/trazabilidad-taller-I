@@ -9,7 +9,16 @@ Debes devolver un JSON con: score (0-100), feedback (detallando fortalezas y deb
 Un score >= 70 se considera aceptable."""
 
 PO_SYSTEM_PROMPT = """Eres un Product Owner experto en metodologías ágiles Scrum.
-Recibirás una propuesta técnica de proyecto universitario y debes generar el backlog completo.
+Recibirás una propuesta técnica de proyecto universitario y debes generar el backlog completo estructurado con múltiples tipos de items.
+
+Definiciones de los tipos de Items:
+- Épica (EP): Grandes bloques de funcionalidades. (Se define en el array 'epicas')
+- Historia de Usuario (HU): Funcionalidad desde la perspectiva del usuario final.
+- Spike (SP): Tareas de investigación o pruebas de concepto técnico.
+- Habilitador (EN): Infraestructura técnica necesaria o setup.
+- Tarea Técnica (TA): Trabajo técnico (Base de datos, Refactorización).
+- Requisito No Func. (RN): Atributos de calidad (Seguridad, Rendimiento).
+- Documentación (DO): Manuales y documentación técnica.
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura exacta, sin texto adicional, sin markdown:
 
@@ -17,27 +26,42 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta, sin texto a
   "epicas": [
     {
       "id": "EP-001",
-      "titulo": "Nombre de la épica",
-      "descripcion": "Descripción del valor de negocio",
-      "historias": [
+      "titulo": "Planificación IA del proyecto",
+      "descripcion": "Capacidad del sistema para generar una hoja de ruta con agentes IA.",
+      "items": [
         {
           "id": "HU-001",
           "epicaId": "EP-001",
-          "titulo": "Título corto de la HU",
+          "tipo": "HU",
+          "titulo": "Generar hoja de ruta",
           "como": "estudiante",
-          "quiero": "poder registrarme con mi email universitario",
-          "para": "acceder a la plataforma de forma segura",
+          "quiero": "ingresar mi idea",
+          "para": "recibir una hoja de ruta técnica validada",
           "criterios": [
-            {"descripcion": "El sistema valida que el email termine en @universidad.edu", "verificable": true},
-            {"descripcion": "Se envía email de confirmación al registrarse", "verificable": true}
+            {"descripcion": "El sistema devuelve hitos semanales.", "verificable": true}
           ],
-          "definicion_done": [
-            "Código revisado en PR",
-            "Tests unitarios al 80%",
-            "Desplegado en entorno de staging"
+          "definicion_done": ["Código revisado en PR", "Tests unitarios", "Desplegado"],
+          "puntos": 3,
+          "prioridad": "Critica",
+          "depende_de": "EN-001",
+          "sprint": 1,
+          "estado": "backlog"
+        },
+        {
+          "id": "SP-001",
+          "epicaId": "EP-001",
+          "tipo": "SP",
+          "titulo": "Modelado de prompts",
+          "como": "desarrollador",
+          "quiero": "diseñar system prompts",
+          "para": "que los agentes respondan en JSON correcto",
+          "criterios": [
+            {"descripcion": "System prompt documentado.", "verificable": true}
           ],
+          "definicion_done": ["Revisión", "Tests", "Documentación"],
           "puntos": 3,
           "prioridad": "Alta",
+          "depende_de": null,
           "sprint": 1,
           "estado": "backlog"
         }
@@ -47,10 +71,10 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta, sin texto a
   "sprints": [
     {
       "numero": 1,
-      "objetivo": "MVP funcional con autenticación y módulo principal",
-      "historias_ids": ["HU-001", "HU-002"],
+      "objetivo": "MVP funcional e infraestructura base",
+      "items_ids": ["HU-001", "SP-001"],
       "duracion_semanas": 2,
-      "puntos_totales": 13
+      "puntos_totales": 6
     }
   ],
   "total_puntos": 55,
@@ -58,14 +82,13 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta, sin texto a
 }
 
 Reglas:
-- Genera entre 3 y 5 épicas según la complejidad del proyecto
-- Cada épica debe tener entre 2 y 5 historias de usuario
-- Los Story Points deben ser de la secuencia Fibonacci: 1, 2, 3, 5, 8, 13
-- Cada HU debe tener mínimo 2 criterios de aceptación verificables
-- Cada HU debe tener exactamente 3 items en definicion_done
-- Organiza las HUs en sprints de 2 semanas con máximo 13 puntos por sprint
-- Las HUs de mayor prioridad van en los primeros sprints
-- El primer sprint siempre debe tener el MVP mínimo funcional
+- Genera entre 3 y 5 épicas (EP) según la complejidad del proyecto.
+- Cada épica debe contener en su lista de `items` una mezcla lógica de HU, SP, EN, TA, RN, y DO. Al menos 4 items por épica.
+- Usa los valores de 'prioridad': Critica, Alta, Media, Baja.
+- Usa 'depende_de' para indicar el ID de un item del cual este depende (o null si no tiene dependencias).
+- Los Story Points deben ser de la secuencia Fibonacci: 1, 2, 3, 5, 8, 13.
+- Organiza los items en sprints de 2 semanas con máximo 13 puntos por sprint.
+- Los habilitadores (EN) y Spikes (SP) deben ir generalmente en el Sprint 1.
 """
 
 COMPETENCY_SYSTEM_PROMPT = """Eres el AG-COMP Competency Tracker. Tu objetivo es mapear las evidencias subidas por un alumno a las competencias del sílabo.

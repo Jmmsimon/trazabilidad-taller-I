@@ -6,7 +6,7 @@ from langgraph.graph import StateGraph, END
 from schemas import (
     DiscoveryState, PropuestaTecnica, Hito,
     propuesta_to_dict, dict_to_propuesta,
-    HistoriaUsuario, Epica, Sprint, BacklogScrum,
+    BacklogItem, Epica, Sprint, BacklogScrum,
 )
 from prompts import DRAFTER_SYSTEM_PROMPT, VALIDATOR_SYSTEM_PROMPT, PO_SYSTEM_PROMPT
 from llm_client import ask_claude, clean_json_response
@@ -72,12 +72,12 @@ async def ag_po_node(state: DiscoveryState) -> Dict:
         # Construir BacklogScrum desde el JSON del LLM
         epicas = []
         for ep in data.get("epicas", []):
-            historias = [HistoriaUsuario(**hu) for hu in ep.get("historias", [])]
+            items = [BacklogItem(**item) for item in ep.get("items", [])]
             epicas.append(Epica(
                 id=ep["id"],
                 titulo=ep["titulo"],
                 descripcion=ep["descripcion"],
-                historias=historias,
+                items=items,
             ))
 
         sprints = [Sprint(**sp) for sp in data.get("sprints", [])]
@@ -91,9 +91,9 @@ async def ag_po_node(state: DiscoveryState) -> Dict:
 
         # Compatibilidad: backlog_po como lista de títulos
         backlog_simple = [
-            hu.titulo
+            item.titulo
             for ep in epicas
-            for hu in ep.historias
+            for item in ep.items
         ]
 
         return {

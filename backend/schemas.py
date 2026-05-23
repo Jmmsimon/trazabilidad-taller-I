@@ -105,17 +105,19 @@ class CriterioAceptacion(BaseModel):
     verificable: bool = True
 
 
-class HistoriaUsuario(BaseModel):
+class BacklogItem(BaseModel):
     id: str
     epicaId: str
+    tipo: Literal["HU", "SP", "EN", "TA", "RN", "DO"] = "HU"
     titulo: str
-    como: str        # "Como [rol]"
-    quiero: str      # "quiero [acción]"
-    para: str        # "para [beneficio]"
+    como: str        # "Como [rol]" o equivalente
+    quiero: str      # "quiero [acción]" o equivalente
+    para: str        # "para [beneficio]" o equivalente
     criterios: List[CriterioAceptacion] = Field(default_factory=list)
     definicion_done: List[str] = Field(default_factory=list)
     puntos: int = 1  # Story Points (1, 2, 3, 5, 8, 13)
-    prioridad: Literal["Alta", "Media", "Baja"] = "Media"
+    prioridad: Literal["Critica", "Alta", "Media", "Baja"] = "Media"
+    depende_de: Optional[str] = None
     sprint: Optional[int] = None  # número de sprint asignado
     estado: Literal["backlog", "todo", "in_progress", "done"] = "backlog"
 
@@ -124,13 +126,13 @@ class Epica(BaseModel):
     id: str
     titulo: str
     descripcion: str
-    historias: List[HistoriaUsuario] = Field(default_factory=list)
+    items: List[BacklogItem] = Field(default_factory=list)
 
 
 class Sprint(BaseModel):
     numero: int
     objetivo: str
-    historias_ids: List[str] = Field(default_factory=list)
+    items_ids: List[str] = Field(default_factory=list)
     duracion_semanas: int = 2
     puntos_totales: int = 0
 

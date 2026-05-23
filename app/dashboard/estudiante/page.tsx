@@ -390,49 +390,88 @@ export default function EstudianteDashboard() {
                     ))}
                   </section>
                 </div>
-                <div className="space-y-6">
-                  <h3 className="text-lg font-bold flex items-center gap-2 text-indigo-400">
-                    <Layers className="w-5 h-5" /> Backlog Ágil (Product Owner)
-                  </h3>
-                  {plan.backlog_scrum?.epicas?.length ? (
-                    plan.backlog_scrum.epicas.map((epica: any) => (
-                      <div key={epica.id} className="bg-zinc-900/40 border border-zinc-800/50 p-4 rounded-2xl space-y-3">
-                        <div className="flex flex-col mb-2 border-b border-zinc-800/50 pb-2">
-                          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">
-                            Épica
-                          </span>
-                          <h4 className="text-sm font-bold text-zinc-200">{epica.titulo}</h4>
-                          <p className="text-[11px] text-zinc-500 mt-1">{epica.descripcion}</p>
-                        </div>
-                        <div className="space-y-2">
-                          {epica.historias?.map((story: any, i: number) => (
-                            <div key={i} className="bg-zinc-950/50 border border-zinc-800/30 p-3 rounded-xl">
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                                {story.prioridad} • {story.puntos_historia} pts
+              </div>
+
+              {/* TABLA DEL BACKLOG ÁGIL (FULL WIDTH) */}
+              <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-3xl p-8 overflow-x-auto">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-indigo-400">
+                  <Layers className="w-6 h-6" /> Backlog Ágil (Product Owner)
+                </h3>
+                
+                {plan.backlog_scrum?.epicas?.length ? (
+                  <table className="w-full text-left text-sm text-zinc-300">
+                    <thead className="text-xs text-zinc-500 uppercase bg-zinc-950/50">
+                      <tr>
+                        <th className="px-4 py-3 rounded-tl-xl">ID</th>
+                        <th className="px-4 py-3">Tipo</th>
+                        <th className="px-4 py-3 min-w-[150px]">Título</th>
+                        <th className="px-4 py-3 min-w-[250px]">Descripción / HU</th>
+                        <th className="px-4 py-3 min-w-[200px]">Criterios de aceptación</th>
+                        <th className="px-4 py-3 text-center">Est.</th>
+                        <th className="px-4 py-3">Prioridad</th>
+                        <th className="px-4 py-3">Depende de</th>
+                        <th className="px-4 py-3 rounded-tr-xl">Épica</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plan.backlog_scrum.epicas.flatMap((epica: any) => [
+                        // Fila de la Épica misma
+                        <tr key={epica.id} className="border-b border-zinc-800/50 bg-indigo-500/5 hover:bg-indigo-500/10 transition-colors">
+                          <td className="px-4 py-3 font-mono text-xs font-bold text-indigo-300">{epica.id}</td>
+                          <td className="px-4 py-3 font-bold text-indigo-400">EP</td>
+                          <td className="px-4 py-3 font-bold text-zinc-200">{epica.titulo}</td>
+                          <td className="px-4 py-3 text-zinc-400 text-xs">{epica.descripcion}</td>
+                          <td className="px-4 py-3 text-zinc-500 italic text-xs">--</td>
+                          <td className="px-4 py-3 text-center text-zinc-500">--</td>
+                          <td className="px-4 py-3 font-bold text-orange-400">Crítica</td>
+                          <td className="px-4 py-3 text-zinc-500">--</td>
+                          <td className="px-4 py-3 text-zinc-500">--</td>
+                        </tr>,
+                        // Filas de los Items hijos
+                        ...(epica.items?.map((item: any) => (
+                          <tr key={item.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
+                            <td className="px-4 py-3 font-mono text-xs text-zinc-500">{item.id}</td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-1 rounded bg-zinc-800 text-[10px] font-bold text-zinc-300">
+                                {item.tipo || "HU"}
                               </span>
-                              <p className="text-xs font-semibold text-zinc-300 mt-1">{story.titulo}</p>
-                              <p className="text-[10px] text-zinc-500 italic mt-1 leading-snug">
-                                "Como {story.como}, quiero {story.quiero} para {story.para}"
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    plan.backlog?.map((story: any, i: number) => (
-                      <div key={i} className="bg-zinc-900/40 border border-zinc-800/50 p-4 rounded-2xl space-y-2">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400">
-                          {story.prioridad}
-                        </span>
-                        <p className="text-sm font-semibold">{story.titulo}</p>
-                        <p className="text-[11px] text-zinc-500">
-                          "Como {story.como}, quiero {story.quiero}..."
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
+                            </td>
+                            <td className="px-4 py-3 font-medium text-zinc-300">{item.titulo}</td>
+                            <td className="px-4 py-3 text-xs text-zinc-400 leading-snug">
+                              "Como {item.como}, quiero {item.quiero} para {item.para}"
+                            </td>
+                            <td className="px-4 py-3 text-xs text-zinc-500">
+                              <ul className="list-disc list-inside space-y-1">
+                                {item.criterios?.map((c: any, idx: number) => (
+                                  <li key={idx} className="line-clamp-2">{c.descripcion}</li>
+                                ))}
+                              </ul>
+                            </td>
+                            <td className="px-4 py-3 text-center font-mono text-xs">{item.puntos} SP</td>
+                            <td className="px-4 py-3 text-xs">
+                              <span className={`px-2 py-1 rounded-full font-bold ${
+                                item.prioridad === 'Critica' ? 'bg-red-500/20 text-red-400' :
+                                item.prioridad === 'Alta' ? 'bg-orange-500/20 text-orange-400' :
+                                item.prioridad === 'Media' ? 'bg-blue-500/20 text-blue-400' :
+                                'bg-zinc-500/20 text-zinc-400'
+                              }`}>
+                                {item.prioridad}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-zinc-500 font-mono">
+                              {item.depende_de || "--"}
+                            </td>
+                            <td className="px-4 py-3 text-xs font-mono text-indigo-400/70">
+                              {epica.id}
+                            </td>
+                          </tr>
+                        )) || [])
+                      ])}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-zinc-500 text-sm">El formato antiguo no soporta tabla estructurada. Por favor genera un proyecto nuevo.</p>
+                )}
               </div>
             </motion.div>
           )}
