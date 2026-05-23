@@ -13,9 +13,9 @@ load_dotenv(os.path.join(_root, ".env"))  # fallback
 
 
 def get_llm():
-    """Configura el LLM. Prioridad: Gemini (gratis) > Claude (de pago)."""
+    """Configura el LLM. Prioridad: Gemini (Prepago) > Claude (de pago)."""
     
-    # 1. Google Gemini (GRATIS)
+    # 1. Google Gemini (Nivel Prepago / Pago)
     google_key = os.getenv("GOOGLE_API_KEY")
     if google_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
