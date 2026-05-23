@@ -21,7 +21,7 @@ def get_llm():
         from langchain_google_genai import ChatGoogleGenerativeAI
         print("🟢 Usando Google Gemini 1.5 Pro (pago)")
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-pro",
+            model="gemini-1.5-pro-latest",
             temperature=0.2,
             google_api_key=google_key,
         )
@@ -121,30 +121,31 @@ def _get_mock_response(system_prompt: str) -> str:
                     "id": "EP-001",
                     "titulo": "Autenticaci\u00f3n y Gesti\u00f3n de Usuarios",
                     "descripcion": "Todo lo relacionado con registro, login y perfiles de usuario",
-                    "historias": [
+                    "items": [
                         {
                             "id": "HU-001", "epicaId": "EP-001",
+                            "tipo": "HU",
                             "titulo": "Registro de usuario",
                             "como": "nuevo usuario", "quiero": "registrarme con mi email",
                             "para": "acceder a la plataforma",
                             "criterios": [
-                                {"descripcion": "Validaci\u00f3n de email universitario", "verificable": True},
-                                {"descripcion": "Email de confirmaci\u00f3n enviado al registrarse", "verificable": True}
+                                {"descripcion": "Validación de email universitario", "verificable": True},
+                                {"descripcion": "Email de confirmación enviado al registrarse", "verificable": True}
                             ],
                             "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
-                            "puntos": 3, "prioridad": "Alta", "sprint": 1, "estado": "backlog"
+                            "puntos": 3, "prioridad": "Alta", "depende_de": None, "sprint": 1, "estado": "backlog"
                         },
                         {
-                            "id": "HU-002", "epicaId": "EP-001",
-                            "titulo": "Login con Google OAuth",
-                            "como": "usuario registrado", "quiero": "iniciar sesi\u00f3n con Google",
-                            "para": "no recordar otra contrase\u00f1a",
+                            "id": "EN-001", "epicaId": "EP-001",
+                            "tipo": "EN",
+                            "titulo": "Configurar Firebase Auth",
+                            "como": "desarrollador", "quiero": "habilitar los proveedores OAuth",
+                            "para": "que los usuarios puedan iniciar sesión",
                             "criterios": [
-                                {"descripcion": "OAuth2 funcional con Google", "verificable": True},
-                                {"descripcion": "Sesi\u00f3n persiste 7 d\u00edas", "verificable": True}
+                                {"descripcion": "OAuth2 funcional con Google", "verificable": True}
                             ],
                             "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
-                            "puntos": 5, "prioridad": "Alta", "sprint": 1, "estado": "backlog"
+                            "puntos": 5, "prioridad": "Alta", "depende_de": None, "sprint": 1, "estado": "backlog"
                         }
                     ]
                 },
@@ -152,30 +153,31 @@ def _get_mock_response(system_prompt: str) -> str:
                     "id": "EP-002",
                     "titulo": "M\u00f3dulo Principal del Proyecto",
                     "descripcion": "Funcionalidades core del sistema acad\u00e9mico",
-                    "historias": [
+                    "items": [
                         {
                             "id": "HU-003", "epicaId": "EP-002",
+                            "tipo": "HU",
                             "titulo": "Dashboard principal",
                             "como": "usuario autenticado", "quiero": "ver mi dashboard",
-                            "para": "tener una visi\u00f3n general del sistema",
+                            "para": "tener una visión general del sistema",
                             "criterios": [
                                 {"descripcion": "Carga en menos de 2 segundos", "verificable": True},
-                                {"descripcion": "Muestra m\u00e9tricas en tiempo real", "verificable": True}
+                                {"descripcion": "Muestra métricas en tiempo real", "verificable": True}
                             ],
                             "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
-                            "puntos": 5, "prioridad": "Alta", "sprint": 1, "estado": "backlog"
+                            "puntos": 5, "prioridad": "Alta", "depende_de": "HU-001", "sprint": 1, "estado": "backlog"
                         },
                         {
-                            "id": "HU-004", "epicaId": "EP-002",
+                            "id": "TA-001", "epicaId": "EP-002",
+                            "tipo": "TA",
                             "titulo": "CRUD de recursos principales",
-                            "como": "usuario", "quiero": "crear, editar y eliminar recursos",
-                            "para": "gestionar mi informaci\u00f3n",
+                            "como": "desarrollador", "quiero": "crear endpoints FastAPI",
+                            "para": "que el dashboard consuma datos",
                             "criterios": [
-                                {"descripcion": "Operaciones CRUD completas y validadas", "verificable": True},
-                                {"descripcion": "Confirmaci\u00f3n antes de eliminar", "verificable": True}
+                                {"descripcion": "Operaciones CRUD completas y validadas", "verificable": True}
                             ],
                             "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
-                            "puntos": 8, "prioridad": "Media", "sprint": 2, "estado": "backlog"
+                            "puntos": 8, "prioridad": "Media", "depende_de": None, "sprint": 2, "estado": "backlog"
                         }
                     ]
                 },
@@ -183,18 +185,18 @@ def _get_mock_response(system_prompt: str) -> str:
                     "id": "EP-003",
                     "titulo": "Tracking e Integraci\u00f3n con IA",
                     "descripcion": "Seguimiento de hitos y agentes de evaluaci\u00f3n autom\u00e1tica",
-                    "historias": [
+                    "items": [
                         {
-                            "id": "HU-005", "epicaId": "EP-003",
-                            "titulo": "Subir evidencias por hito",
-                            "como": "estudiante", "quiero": "subir archivos como evidencia de un hito",
-                            "para": "demostrar mi avance al profesor",
+                            "id": "SP-001", "epicaId": "EP-003",
+                            "tipo": "SP",
+                            "titulo": "Investigación de Storage",
+                            "como": "arquitecto", "quiero": "evaluar Firebase vs S3",
+                            "para": "decidir dónde guardar las evidencias",
                             "criterios": [
-                                {"descripcion": "Soporta PDF, imagen y enlace externo", "verificable": True},
-                                {"descripcion": "El archivo queda vinculado al hito correcto", "verificable": True}
+                                {"descripcion": "Matriz de decisión completada", "verificable": True}
                             ],
-                            "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
-                            "puntos": 5, "prioridad": "Alta", "sprint": 2, "estado": "backlog"
+                            "definicion_done": ["Documento publicado"],
+                            "puntos": 5, "prioridad": "Alta", "depende_de": None, "sprint": 2, "estado": "backlog"
                         }
                     ]
                 }
