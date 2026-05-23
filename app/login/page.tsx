@@ -1,8 +1,8 @@
 "use client";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sparkles, AlertCircle, Loader2 } from "lucide-react";
 
 function GoogleIcon() {
   return (
@@ -18,6 +18,8 @@ function GoogleIcon() {
 export default function LoginPage() {
   const { user, rol, loading, loginGoogle } = useAuth();
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -62,13 +64,44 @@ export default function LoginPage() {
             Inicia sesión con tu cuenta institucional de Google
           </p>
 
+          {error && (
+            <div className="mb-4 flex items-start gap-2 bg-red-950/50 border border-red-800/50 rounded-xl p-3">
+              <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-red-300 leading-snug">{error}</p>
+            </div>
+          )}
+
           <button
             id="btn-google-login"
-            onClick={loginGoogle}
-            className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all shadow-lg"
+            disabled={isSigningIn}
+            onClick={async () => {
+              setError(null);
+              setIsSigningIn(true);
+              try {
+                await loginGoogle();
+              } catch (err: unknown) {
+                const code = (err as { code?: string })?.code ?? "";
+                if (code === "auth/popup-blocked") {
+                  setError("El navegador bloqueó la ventana emergente. Permite los popups para este sitio e intenta de nuevo.");
+                } else if (code === "auth/unauthorized-domain") {
+                  setError(`Dominio no autorizado en Firebase. Agrega "${window.location.hostname}" en Firebase Console → Authentication → Settings → Authorized domains.`);
+                } else if (code === "auth/popup-closed-by-user") {
+                  setError(null); // El usuario cerró el popup, no es un error real
+                } else {
+                  setError(`Error: ${code || (err as Error).message}`);
+                }
+              } finally {
+                setIsSigningIn(false);
+              }
+            }}
+            className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <GoogleIcon />
-            Continuar con Google
+            {isSigningIn ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <GoogleIcon />
+            )}
+            {isSigningIn ? "Conectando..." : "Continuar con Google"}
           </button>
 
           <div className="mt-4">
