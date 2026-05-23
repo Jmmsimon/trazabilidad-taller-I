@@ -19,9 +19,9 @@ def get_llm():
     google_key = os.getenv("GOOGLE_API_KEY")
     if google_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
-        print("🟢 Usando Google Gemini 2.0 Flash (gratuito)")
+        print("🟢 Usando Google Gemini 1.5 Pro (pago)")
         return ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash",
+            model="gemini-1.5-pro",
             temperature=0.2,
             google_api_key=google_key,
         )
