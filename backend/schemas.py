@@ -158,7 +158,10 @@ def propuesta_to_dict(p: PropuestaTecnica) -> dict:
     return p.model_dump()
 
 def dict_to_propuesta(d: dict) -> PropuestaTecnica:
-    if isinstance(d, dict) and "hitos" in d:
+    if isinstance(d, dict):
+        if "backlog_scrum" in d and not isinstance(d["backlog_scrum"], dict):
+            d.pop("backlog_scrum", None)
+        if "hitos" in d:
         import uuid
         for h in d["hitos"]:
             if isinstance(h, dict):
