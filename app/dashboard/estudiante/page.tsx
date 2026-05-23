@@ -47,6 +47,7 @@ interface ProjectPlan {
     para: string;
     prioridad: "Alta" | "Media" | "Baja";
   }[];
+  backlog_scrum?: any; // Añadido para el backlog estructurado
 }
 
 interface Competencia {
