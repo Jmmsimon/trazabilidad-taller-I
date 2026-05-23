@@ -3,8 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   User,
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -32,9 +31,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Es vital llamar a getRedirectResult para procesar el login de signInWithRedirect
-    getRedirectResult(auth).catch(console.error);
-
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
@@ -84,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginGoogle = async () => {
     // Errors are intentionally NOT caught here so the UI can handle them
-    await signInWithRedirect(auth, googleProvider);
+    await signInWithPopup(auth, googleProvider);
   };
 
   const logout = async () => {
