@@ -6,6 +6,7 @@ from langgraph.graph import StateGraph, END
 from schemas import (
     DiscoveryState, PropuestaTecnica, Hito,
     propuesta_to_dict, dict_to_propuesta,
+    HistoriaUsuario, Epica, Sprint, BacklogScrum,
 )
 from prompts import DRAFTER_SYSTEM_PROMPT, VALIDATOR_SYSTEM_PROMPT, PO_SYSTEM_PROMPT
 from llm_client import ask_claude, clean_json_response
@@ -47,23 +48,61 @@ async def validator_node(state: DiscoveryState) -> Dict:
         "es_viable": data.get("viable", False)
     }
 
-# ── AG-PO (Product Owner) ──────────────────────────────────────────────
-async def po_node(state: DiscoveryState) -> Dict:
-    """Genera el backlog de historias de usuario final."""
-    print("🤖 [AG-PO] Generando backlog de historias de usuario...")
-    
-    prop_dict = propuesta_to_dict(state.propuesta)
-    user_prompt = f"Propuesta confirmada:\n{json.dumps(prop_dict, indent=2)}"
-    
+# ── AG-PO (Product Owner) ────────────────────────────────────────────
+async def ag_po_node(state: DiscoveryState) -> Dict:
+    """Genera el backlog Scrum completo: Épicas, HU, Sprint Planning, DoD y puntos."""
+    print("🤖 [AG-PO] Generando backlog Scrum completo...")
+
+    propuesta = state.propuesta
+    if not propuesta:
+        return {"backlog_scrum": None, "backlog_po": []}
+
+    user_prompt = (
+        f"Proyecto: {propuesta.tema}\n"
+        f"Descripción: {propuesta.descripcion}\n"
+        f"Stack: {', '.join(propuesta.stack)}\n"
+        f"Hitos del roadmap:\n"
+        + "\n".join([f"- Semana {h.semana_sugerida}: {h.nombre}" for h in propuesta.hitos])
+    )
+
     response = await ask_claude(PO_SYSTEM_PROMPT, user_prompt)
     data = clean_json_response(response)
-    
-    # Extraemos solo los títulos de las historias para el MVP
-    backlog = data.get("user_stories", [])
-    if isinstance(backlog, list) and len(backlog) > 0 and isinstance(backlog[0], dict):
-        backlog = [f"{s.get('titulo')}: {s.get('quiero')}" for s in backlog]
 
-    return {"backlog_po": backlog}
+    try:
+        # Construir BacklogScrum desde el JSON del LLM
+        epicas = []
+        for ep in data.get("epicas", []):
+            historias = [HistoriaUsuario(**hu) for hu in ep.get("historias", [])]
+            epicas.append(Epica(
+                id=ep["id"],
+                titulo=ep["titulo"],
+                descripcion=ep["descripcion"],
+                historias=historias,
+            ))
+
+        sprints = [Sprint(**sp) for sp in data.get("sprints", [])]
+
+        backlog_scrum = BacklogScrum(
+            epicas=epicas,
+            sprints=sprints,
+            total_puntos=data.get("total_puntos", 0),
+            velocidad_estimada=data.get("velocidad_estimada", 10),
+        )
+
+        # Compatibilidad: backlog_po como lista de títulos
+        backlog_simple = [
+            hu.titulo
+            for ep in epicas
+            for hu in ep.historias
+        ]
+
+        return {
+            "backlog_scrum": backlog_scrum,
+            "backlog_po": backlog_simple,
+        }
+    except Exception as e:
+        print(f"❌ Error construyendo BacklogScrum: {e}")
+        return {"backlog_scrum": None, "backlog_po": []}
 
 # ── Router Logic ──────────────────────────────────────────────────────
 def should_continue(state: DiscoveryState):
@@ -78,7 +117,7 @@ def build_discovery_graph():
 
     workflow.add_node("ag_001_drafter", drafter_node)
     workflow.add_node("ag_002_validator", validator_node)
-    workflow.add_node("ag_po", po_node)
+    workflow.add_node("ag_po", ag_po_node)
 
     workflow.set_entry_point("ag_001_drafter")
     workflow.add_edge("ag_001_drafter", "ag_002_validator")

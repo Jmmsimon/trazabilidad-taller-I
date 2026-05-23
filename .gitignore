@@ -44,3 +44,6 @@ next-env.d.ts
 backend/serviceAccountKey.json
 backend/serviceAccountKey.json
 .env.local
+backend/serviceAccountKey.json
+.env.local
+backend/__pycache__/

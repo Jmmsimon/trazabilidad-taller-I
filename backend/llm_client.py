@@ -114,15 +114,109 @@ def _get_mock_response(system_prompt: str) -> str:
             "feedback": "Propuesta técnicamente viable. Stack coherente con los objetivos del proyecto."
         })
     
-    if "product owner" in prompt_lower or "backlog" in prompt_lower:
+    if "product owner" in prompt_lower or "backlog" in prompt_lower or "\u00e9picas" in prompt_lower:
         return json.dumps({
-            "user_stories": [
-                "Login con Firebase Auth y selección de rol",
-                "Crear propuesta de proyecto con formulario inteligente",
-                "Ver Roadmap generado por IA con hitos y tareas",
-                "Subir evidencias por hito completado",
-                "Ver métricas de integridad y competencias alcanzadas"
-            ]
+            "epicas": [
+                {
+                    "id": "EP-001",
+                    "titulo": "Autenticaci\u00f3n y Gesti\u00f3n de Usuarios",
+                    "descripcion": "Todo lo relacionado con registro, login y perfiles de usuario",
+                    "historias": [
+                        {
+                            "id": "HU-001", "epicaId": "EP-001",
+                            "titulo": "Registro de usuario",
+                            "como": "nuevo usuario", "quiero": "registrarme con mi email",
+                            "para": "acceder a la plataforma",
+                            "criterios": [
+                                {"descripcion": "Validaci\u00f3n de email universitario", "verificable": True},
+                                {"descripcion": "Email de confirmaci\u00f3n enviado al registrarse", "verificable": True}
+                            ],
+                            "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
+                            "puntos": 3, "prioridad": "Alta", "sprint": 1, "estado": "backlog"
+                        },
+                        {
+                            "id": "HU-002", "epicaId": "EP-001",
+                            "titulo": "Login con Google OAuth",
+                            "como": "usuario registrado", "quiero": "iniciar sesi\u00f3n con Google",
+                            "para": "no recordar otra contrase\u00f1a",
+                            "criterios": [
+                                {"descripcion": "OAuth2 funcional con Google", "verificable": True},
+                                {"descripcion": "Sesi\u00f3n persiste 7 d\u00edas", "verificable": True}
+                            ],
+                            "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
+                            "puntos": 5, "prioridad": "Alta", "sprint": 1, "estado": "backlog"
+                        }
+                    ]
+                },
+                {
+                    "id": "EP-002",
+                    "titulo": "M\u00f3dulo Principal del Proyecto",
+                    "descripcion": "Funcionalidades core del sistema acad\u00e9mico",
+                    "historias": [
+                        {
+                            "id": "HU-003", "epicaId": "EP-002",
+                            "titulo": "Dashboard principal",
+                            "como": "usuario autenticado", "quiero": "ver mi dashboard",
+                            "para": "tener una visi\u00f3n general del sistema",
+                            "criterios": [
+                                {"descripcion": "Carga en menos de 2 segundos", "verificable": True},
+                                {"descripcion": "Muestra m\u00e9tricas en tiempo real", "verificable": True}
+                            ],
+                            "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
+                            "puntos": 5, "prioridad": "Alta", "sprint": 1, "estado": "backlog"
+                        },
+                        {
+                            "id": "HU-004", "epicaId": "EP-002",
+                            "titulo": "CRUD de recursos principales",
+                            "como": "usuario", "quiero": "crear, editar y eliminar recursos",
+                            "para": "gestionar mi informaci\u00f3n",
+                            "criterios": [
+                                {"descripcion": "Operaciones CRUD completas y validadas", "verificable": True},
+                                {"descripcion": "Confirmaci\u00f3n antes de eliminar", "verificable": True}
+                            ],
+                            "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
+                            "puntos": 8, "prioridad": "Media", "sprint": 2, "estado": "backlog"
+                        }
+                    ]
+                },
+                {
+                    "id": "EP-003",
+                    "titulo": "Tracking e Integraci\u00f3n con IA",
+                    "descripcion": "Seguimiento de hitos y agentes de evaluaci\u00f3n autom\u00e1tica",
+                    "historias": [
+                        {
+                            "id": "HU-005", "epicaId": "EP-003",
+                            "titulo": "Subir evidencias por hito",
+                            "como": "estudiante", "quiero": "subir archivos como evidencia de un hito",
+                            "para": "demostrar mi avance al profesor",
+                            "criterios": [
+                                {"descripcion": "Soporta PDF, imagen y enlace externo", "verificable": True},
+                                {"descripcion": "El archivo queda vinculado al hito correcto", "verificable": True}
+                            ],
+                            "definicion_done": ["PR aprobado", "Tests al 80%", "Deploy en staging"],
+                            "puntos": 5, "prioridad": "Alta", "sprint": 2, "estado": "backlog"
+                        }
+                    ]
+                }
+            ],
+            "sprints": [
+                {
+                    "numero": 1,
+                    "objetivo": "MVP con autenticaci\u00f3n y dashboard funcional",
+                    "historias_ids": ["HU-001", "HU-002", "HU-003"],
+                    "duracion_semanas": 2,
+                    "puntos_totales": 13
+                },
+                {
+                    "numero": 2,
+                    "objetivo": "CRUD completo y subida de evidencias",
+                    "historias_ids": ["HU-004", "HU-005"],
+                    "duracion_semanas": 2,
+                    "puntos_totales": 13
+                }
+            ],
+            "total_puntos": 26,
+            "velocidad_estimada": 13
         })
     
     return "Respuesta simulada del agente."

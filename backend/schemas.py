@@ -42,6 +42,7 @@ class PropuestaTecnica(BaseModel):
     stack: List[str] = Field(default_factory=list)
     hitos: List[Hito] = Field(default_factory=list)
     observaciones: Optional[str] = None
+    backlog_scrum: Optional["BacklogScrum"] = None
 
 
 class DiscoveryState(BaseModel):
@@ -51,7 +52,8 @@ class DiscoveryState(BaseModel):
     score_validator: int = 0
     feedback_validator: str = ""
     es_viable: bool = False
-    backlog_po: List[str] = Field(default_factory=list)
+    backlog_po: List[str] = Field(default_factory=list)  # mantener por compatibilidad
+    backlog_scrum: Optional["BacklogScrum"] = None        # nuevo campo estructurado
     alumno_confirmado: bool = False
     iteracion: int = 0
     max_iteraciones: int = 5
@@ -93,6 +95,57 @@ class TrackingState(BaseModel):
     diagnostico_riesgo: str = ""
     resumen_ejecutivo: str = ""
     ciclo_activo: bool = True
+
+# ───────────────────────────────────────────────────────────
+#  Scrum artifacts
+# ───────────────────────────────────────────────────────────
+
+class CriterioAceptacion(BaseModel):
+    descripcion: str
+    verificable: bool = True
+
+
+class HistoriaUsuario(BaseModel):
+    id: str
+    epicaId: str
+    titulo: str
+    como: str        # "Como [rol]"
+    quiero: str      # "quiero [acción]"
+    para: str        # "para [beneficio]"
+    criterios: List[CriterioAceptacion] = Field(default_factory=list)
+    definicion_done: List[str] = Field(default_factory=list)
+    puntos: int = 1  # Story Points (1, 2, 3, 5, 8, 13)
+    prioridad: Literal["Alta", "Media", "Baja"] = "Media"
+    sprint: Optional[int] = None  # número de sprint asignado
+    estado: Literal["backlog", "todo", "in_progress", "done"] = "backlog"
+
+
+class Epica(BaseModel):
+    id: str
+    titulo: str
+    descripcion: str
+    historias: List[HistoriaUsuario] = Field(default_factory=list)
+
+
+class Sprint(BaseModel):
+    numero: int
+    objetivo: str
+    historias_ids: List[str] = Field(default_factory=list)
+    duracion_semanas: int = 2
+    puntos_totales: int = 0
+
+
+class BacklogScrum(BaseModel):
+    epicas: List[Epica] = Field(default_factory=list)
+    sprints: List[Sprint] = Field(default_factory=list)
+    total_puntos: int = 0
+    velocidad_estimada: int = 10  # puntos por sprint
+
+
+# Actualizar referencias forward
+PropuestaTecnica.model_rebuild()
+DiscoveryState.model_rebuild()
+
 
 # ───────────────────────────────────────────────────────────
 #  Helpers de conversión (necesarios para el grafo)

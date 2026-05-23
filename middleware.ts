@@ -3,6 +3,12 @@ import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
 
 export async function middleware(request: NextRequest) {
+  // TODO: Re-enable auth in production
+  // DEV MODE: bypass auth check — remove this line when login is implemented
+  if (process.env.NODE_ENV === 'development') {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get('token')?.value;
 
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
