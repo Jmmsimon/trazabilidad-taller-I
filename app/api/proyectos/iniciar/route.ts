@@ -19,8 +19,21 @@ export async function POST(request: Request) {
     });
 
     if (!backendResponse.ok) {
-      const errorData = await backendResponse.json();
-      return NextResponse.json({ error: errorData.detail || "Error en el backend de Python" }, { status: backendResponse.status });
+      let errorData;
+      try {
+        errorData = await backendResponse.json();
+      } catch (e) {
+        try {
+          errorData = { raw: await backendResponse.text() };
+        } catch (textErr) {
+          errorData = { message: "No se pudo leer la respuesta de error" };
+        }
+      }
+      return NextResponse.json({ 
+        error: "Error en el backend de Python", 
+        info: errorData,
+        status: backendResponse.status
+      }, { status: backendResponse.status });
     }
 
     const data = await backendResponse.json();
