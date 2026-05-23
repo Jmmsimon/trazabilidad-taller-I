@@ -32,36 +32,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        // Configurar cookie para el middleware de Next.js
-        const token = await firebaseUser.getIdToken();
-        await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token })
-        });
-
-        // Obtener o crear perfil en Firestore
-        const ref = doc(db, "usuarios", firebaseUser.uid);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          setRol(snap.data().rol ?? "estudiante");
-        } else {
-          // Primer login: crear como estudiante por defecto
-          await setDoc(ref, {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            nombre: firebaseUser.displayName,
-            rol: "estudiante",
-            creadoEn: new Date().toISOString(),
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          
+          // Configurar cookie para el middleware de Next.js
+          const token = await firebaseUser.getIdToken();
+          await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
           });
-          setRol("estudiante");
+
+          // Obtener o crear perfil en Firestore
+          const ref = doc(db, "usuarios", firebaseUser.uid);
+          try {
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+              setRol(snap.data().rol ?? "estudiante");
+            } else {
+              // Primer login: crear como estudiante por defecto
+              await setDoc(ref, {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                nombre: firebaseUser.displayName,
+                rol: "estudiante",
+                creadoEn: new Date().toISOString(),
+              });
+              setRol("estudiante");
+            }
+          } catch (firestoreError) {
+            console.error("Firestore error (ignoring for login):", firestoreError);
+            setRol("estudiante"); // Default fallback so user is not blocked
+          }
+        } else {
+          setUser(null);
+          setRol(null);
         }
-      } else {
-        setRol(null);
+      } catch (err) {
+        console.error("Auth context error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
     return () => unsub();
   }, []);

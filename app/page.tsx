@@ -114,13 +114,8 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-zinc-800 flex justify-center gap-2 flex-wrap">
-            <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#4a3f9e]/30 text-[#b5aef5] border border-[#6D63E0]/20">
-              Estudiante
-            </span>
-            <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300 border border-blue-800/30">
-              Docente
-            </span>
+          <div className="mt-6 pt-6 border-t border-zinc-800">
+            {/* The role is automatically assigned based on the user account */}
           </div>
 
           <p className="text-[11px] text-zinc-600 text-center mt-4">
