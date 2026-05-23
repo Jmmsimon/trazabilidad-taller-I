@@ -391,19 +391,46 @@ export default function EstudianteDashboard() {
                 </div>
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold flex items-center gap-2 text-indigo-400">
-                    <Layers className="w-5 h-5" /> Historias de Usuario
+                    <Layers className="w-5 h-5" /> Backlog Ágil (Product Owner)
                   </h3>
-                  {plan.backlog.map((story, i) => (
-                    <div key={i} className="bg-zinc-900/40 border border-zinc-800/50 p-4 rounded-2xl space-y-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400">
-                        {story.prioridad}
-                      </span>
-                      <p className="text-sm font-semibold">{story.titulo}</p>
-                      <p className="text-[11px] text-zinc-500">
-                        "Como {story.como}, quiero {story.quiero}..."
-                      </p>
-                    </div>
-                  ))}
+                  {plan.backlog_scrum?.epicas?.length ? (
+                    plan.backlog_scrum.epicas.map((epica: any) => (
+                      <div key={epica.id} className="bg-zinc-900/40 border border-zinc-800/50 p-4 rounded-2xl space-y-3">
+                        <div className="flex flex-col mb-2 border-b border-zinc-800/50 pb-2">
+                          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">
+                            Épica
+                          </span>
+                          <h4 className="text-sm font-bold text-zinc-200">{epica.titulo}</h4>
+                          <p className="text-[11px] text-zinc-500 mt-1">{epica.descripcion}</p>
+                        </div>
+                        <div className="space-y-2">
+                          {epica.historias?.map((story: any, i: number) => (
+                            <div key={i} className="bg-zinc-950/50 border border-zinc-800/30 p-3 rounded-xl">
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                                {story.prioridad} • {story.puntos_historia} pts
+                              </span>
+                              <p className="text-xs font-semibold text-zinc-300 mt-1">{story.titulo}</p>
+                              <p className="text-[10px] text-zinc-500 italic mt-1 leading-snug">
+                                "Como {story.como}, quiero {story.quiero} para {story.para}"
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    plan.backlog?.map((story: any, i: number) => (
+                      <div key={i} className="bg-zinc-900/40 border border-zinc-800/50 p-4 rounded-2xl space-y-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400">
+                          {story.prioridad}
+                        </span>
+                        <p className="text-sm font-semibold">{story.titulo}</p>
+                        <p className="text-[11px] text-zinc-500">
+                          "Como {story.como}, quiero {story.quiero}..."
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </motion.div>
