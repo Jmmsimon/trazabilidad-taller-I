@@ -162,32 +162,32 @@ def dict_to_propuesta(d: dict) -> PropuestaTecnica:
         if "backlog_scrum" in d and not isinstance(d["backlog_scrum"], dict):
             d.pop("backlog_scrum", None)
         if "hitos" in d:
-        import uuid
-        for h in d["hitos"]:
-            if isinstance(h, dict):
-                if not h.get("id"):
-                    h["id"] = f"hito-{uuid.uuid4().hex[:8]}"
-                sem = h.get("semana_sugerida")
-                if sem is not None:
-                    if isinstance(sem, str):
-                        sem = sem.strip()
-                        if "-" in sem:
-                            try:
-                                sem = int(sem.split("-")[0].strip())
-                            except ValueError:
-                                sem = 1
-                        else:
-                            import re
-                            nums = re.findall(r"\d+", sem)
-                            if nums:
-                                sem = int(nums[0])
+            import uuid
+            for h in d["hitos"]:
+                if isinstance(h, dict):
+                    if not h.get("id"):
+                        h["id"] = f"hito-{uuid.uuid4().hex[:8]}"
+                    sem = h.get("semana_sugerida")
+                    if sem is not None:
+                        if isinstance(sem, str):
+                            sem = sem.strip()
+                            if "-" in sem:
+                                try:
+                                    sem = int(sem.split("-")[0].strip())
+                                except ValueError:
+                                    sem = 1
                             else:
-                                sem = 1
-                    elif isinstance(sem, (int, float)):
-                        sem = int(sem)
-                    else:
-                        sem = 1
-                    h["semana_sugerida"] = sem
+                                import re
+                                nums = re.findall(r"\d+", sem)
+                                if nums:
+                                    sem = int(nums[0])
+                                else:
+                                    sem = 1
+                        elif isinstance(sem, (int, float)):
+                            sem = int(sem)
+                        else:
+                            sem = 1
+                        h["semana_sugerida"] = sem
     return PropuestaTecnica(**d)
 
 def dict_to_reporte(d: dict) -> ReporteCompetencias:
