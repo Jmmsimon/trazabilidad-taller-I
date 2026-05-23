@@ -26,8 +26,12 @@ export async function POST(request: Request) {
     const data = await backendResponse.json();
     return NextResponse.json(data);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error proxying to Python backend:", error);
-    return NextResponse.json({ error: "No se pudo conectar con el servidor de IA (Python)" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "No se pudo conectar con el servidor de IA (Python)", 
+      detalle: error.message,
+      urlIntentada: `${BACKEND_URL}/proyectos/iniciar`
+    }, { status: 500 });
   }
 }
