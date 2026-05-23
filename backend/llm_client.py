@@ -19,7 +19,7 @@ def get_llm():
     google_key = os.getenv("GOOGLE_API_KEY")
     if google_key:
         from langchain_google_genai import ChatGoogleGenerativeAI
-        print("🟢 Usando Google Gemini 2.5 Flash (pago)")
+        print("[INFO] Usando Google Gemini 2.5 Flash (pago)")
         return ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
             temperature=0.2,
@@ -30,14 +30,14 @@ def get_llm():
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if anthropic_key and anthropic_key != "your_api_key_here":
         from langchain_anthropic import ChatAnthropic
-        print("🔵 Usando Anthropic Claude")
+        print("[INFO] Usando Anthropic Claude")
         return ChatAnthropic(
             model="claude-3-5-sonnet-20240620",
             temperature=0.2,
             anthropic_api_key=anthropic_key
         )
     
-    print("⚠️ MODO SIMULACIÓN: No hay GOOGLE_API_KEY ni ANTHROPIC_API_KEY.")
+    print("[WARNING] MODO SIMULACION: No hay GOOGLE_API_KEY ni ANTHROPIC_API_KEY.")
     return None
 
 
@@ -57,7 +57,7 @@ async def ask_claude(system_prompt: str, user_content: str) -> Optional[str]:
         response = await llm.ainvoke(messages)
         return response.content
     except Exception as e:
-        print(f"❌ Error al consultar LLM: {e}")
+        print(f"[ERROR] Error al consultar LLM: {e}")
         return _get_mock_response(system_prompt)
 
 
@@ -228,6 +228,16 @@ def clean_json_response(text: str) -> Dict[str, Any]:
     """Limpia el texto del LLM para extraer solo el JSON válido."""
     if not text:
         return {}
+        
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    text = text.strip()
+
     try:
         return json.loads(text)
     except:
@@ -236,7 +246,7 @@ def clean_json_response(text: str) -> Dict[str, Any]:
             end = text.rfind("}") + 1
             if start != -1 and end != 0:
                 return json.loads(text[start:end])
-        except:
-            print(f"❌ No pude parsear JSON. Texto: {text[:150]}...")
+        except Exception as e:
+            print(f"❌ No pude parsear JSON. Error: {e} | Texto: {text[:150]}...")
             return {}
     return {}
