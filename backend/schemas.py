@@ -46,6 +46,7 @@ class PropuestaTecnica(BaseModel):
 
 
 class DiscoveryState(BaseModel):
+    proyecto_id: str = ""
     idea_alumno: str = ""
     stack_tentativo: List[str] = Field(default_factory=list)
     propuesta: Optional[PropuestaTecnica] = None

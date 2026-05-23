@@ -22,7 +22,7 @@ async def devops_node(state: TrackingState) -> Dict:
     Recolecta evidencias del repo/deploy del alumno.
     Por ahora usa mocks; conectar a GitHub/Vercel API aquí cuando esté listo.
     """
-    print("🤖 [AG-DEVOPS] Recolectando evidencias de despliegue y commits...")
+    print("[AG-DEVOPS] Recolectando evidencias de despliegue y commits...")
 
     hito_ref = "hito-001"  # En producción vendrá de state.propuesta_confirmada
 
@@ -64,7 +64,7 @@ async def devops_node(state: TrackingState) -> Dict:
 # ── AG-COMP ──────────────────────────────────────────────────────────
 async def competency_node(state: TrackingState) -> Dict:
     """Mapea las evidencias subidas con competencias académicas."""
-    print("🤖 [AG-COMP] Analizando competencias alcanzadas...")
+    print("[AG-COMP] Analizando competencias alcanzadas...")
 
     # Serializa evidencias para el prompt
     evidencias_str = json.dumps(
@@ -105,7 +105,7 @@ async def competency_node(state: TrackingState) -> Dict:
 # ── AG-003 Analyst ───────────────────────────────────────────────────
 async def analyst_node(state: TrackingState) -> Dict:
     """Detecta riesgos de integridad, plagio e inactividad."""
-    print("🤖 [AG-003 Analyst] Evaluando integridad y riesgos...")
+    print("[AG-003 Analyst] Evaluando integridad y riesgos...")
 
     evidencias_str = json.dumps(
         [e.model_dump() for e in state.evidencias], ensure_ascii=False
@@ -147,7 +147,7 @@ async def analyst_node(state: TrackingState) -> Dict:
 # ── AG-004 Reporter ──────────────────────────────────────────────────
 async def reporter_node(state: TrackingState) -> Dict:
     """Genera el resumen ejecutivo del ciclo de seguimiento."""
-    print("🤖 [AG-004 Reporter] Generando informe ejecutivo...")
+    print("[AG-004 Reporter] Generando informe ejecutivo...")
 
     analisis_str = json.dumps(
         {

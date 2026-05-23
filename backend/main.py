@@ -64,6 +64,7 @@ async def run_discovery_task(
     try:
         graph = build_discovery_graph()
         initial_state = DiscoveryState(
+            proyecto_id=proyecto_id,
             idea_alumno=idea,
             stack_tentativo=stack,
             max_iteraciones=3,
@@ -124,10 +125,10 @@ async def run_discovery_task(
                     "alumnoId": "",  # Se setea en el request, aquí no llega
                 })
             except Exception as db_err:
-                print(f"❌ Error al guardar en Firestore: {db_err}")
+                print(f"[ERROR] Error al guardar en Firestore: {db_err}")
                 raise
 
-            print(f"✅ Proyecto {proyecto_id} procesado exitosamente.")
+            print(f"[OK] Proyecto {proyecto_id} procesado exitosamente.")
         else:
             crear_proyecto(proyecto_id, {
                 "status": "error",
@@ -135,7 +136,7 @@ async def run_discovery_task(
             })
 
     except Exception as e:
-        print(f"❌ Error en discovery task: {e}")
+        print(f"[ERROR] Error en discovery task: {e}")
         import traceback
         traceback.print_exc()
         try:
@@ -151,7 +152,7 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
     try:
         project = obtener_proyecto(proyecto_id)
         if not project:
-            print(f"❌ Tracking: proyecto {proyecto_id} no encontrado.")
+            print(f"[ERROR] Tracking: proyecto {proyecto_id} no encontrado.")
             return
 
         # Reconstruir PropuestaTecnica desde Firestore
@@ -191,13 +192,13 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
                 "tracking_status": "completed",
             })
         except Exception as db_err:
-            print(f"❌ Error al guardar tracking en Firestore: {db_err}")
+            print(f"[ERROR] Error al guardar tracking en Firestore: {db_err}")
             raise
 
-        print(f"✅ Tracking {proyecto_id} completado.")
+        print(f"[OK] Tracking {proyecto_id} completado.")
 
     except Exception as e:
-        print(f"❌ Error en tracking task: {e}")
+        print(f"[ERROR] Error en tracking task: {e}")
         import traceback
         traceback.print_exc()
         try:
@@ -218,11 +219,14 @@ async def iniciar_proyecto(req: ProjectStartRequest, background_tasks: Backgroun
     try:
         crear_proyecto(proyecto_id, {
             "status": "processing",
+            "progress": 5,
+            "status_detail": "Iniciando agentes de co-creación...",
+            "active_agent": "drafter",
             "alumnoId": req.alumnoId,
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear proyecto: {e}")
-    print(f"🚀 Proyecto {proyecto_id} iniciado para alumno {req.alumnoId}")
+    print(f"[START] Proyecto {proyecto_id} iniciado para alumno {req.alumnoId}")
     background_tasks.add_task(
         run_discovery_task, proyecto_id, req.idea, req.stack, req.nombre
     )
@@ -262,7 +266,7 @@ async def iniciar_tracking(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
 
-    print(f"📡 Iniciando tracking para proyecto {proyecto_id}")
+    print(f"[TRACKING] Iniciando tracking para proyecto {proyecto_id}")
 
     background_tasks.add_task(run_tracking_task, proyecto_id, req.alumnoId)
     return {"proyectoId": proyecto_id, "tracking_status": "processing"}
@@ -462,6 +466,6 @@ async def get_historial(proyecto_id: str):
 if __name__ == "__main__":
     import uvicorn
     print("=" * 60)
-    print("🧠 Servidor de Trazabilidad AI — FastAPI + LangGraph + Firestore")
+    print("Servidor de Trazabilidad AI -- FastAPI + LangGraph + Firestore")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
