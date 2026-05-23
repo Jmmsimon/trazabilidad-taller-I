@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   User,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginGoogle = async () => {
     // Errors are intentionally NOT caught here so the UI can handle them
-    await signInWithPopup(auth, googleProvider);
+    await signInWithRedirect(auth, googleProvider);
   };
 
   const logout = async () => {
