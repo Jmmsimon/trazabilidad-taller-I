@@ -71,7 +71,17 @@ export default function LoginPage() {
             Continuar con Google
           </button>
 
-          <div className="mt-8 pt-6 border-t border-zinc-800 flex justify-center gap-2 flex-wrap">
+          <div className="mt-4">
+            <button
+              id="btn-guest-bypass"
+              onClick={() => router.push("/dashboard/estudiante")}
+              className="w-full bg-transparent text-zinc-500 text-xs py-2.5 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:text-zinc-300 transition-all"
+            >
+              Probar como Invitado (Bypass)
+            </button>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-zinc-800 flex justify-center gap-2 flex-wrap">
             <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#4a3f9e]/30 text-[#b5aef5] border border-[#6D63E0]/20">
               Estudiante
             </span>
