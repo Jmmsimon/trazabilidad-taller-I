@@ -16,7 +16,7 @@ export function AuthGuard({ children, rolRequerido }: AuthGuardProps) {
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        router.push("/login");
+        router.push("/");
       } else if (rolRequerido && rol !== rolRequerido) {
         // Redirige al dashboard correcto si el rol no coincide
         router.push(

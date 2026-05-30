@@ -30,6 +30,9 @@ class Hito(BaseModel):
     evidencias_esperadas: List[str] = Field(default_factory=list)
     completado: bool = False
     semana_sugerida: Optional[int] = None  # sugerencia, no obligatorio
+    estado_hito: str = "pendiente"          # "pendiente", "validado", "observado", "corregido"
+    tareas_estado: List[str] = Field(default_factory=list)       # ok, observado
+    tareas_comentarios: List[str] = Field(default_factory=list)  # retroalimentaciones por tarea
 
 
 # ───────────────────────────────────────────────────────────
@@ -64,6 +67,16 @@ class DiscoveryState(BaseModel):
 #  Subgrafo TRACKING
 # ───────────────────────────────────────────────────────────
 
+class CommitInfo(BaseModel):
+    sha: str
+    mensaje: str
+    fecha: str
+    author: str
+    url: Optional[str] = None
+    alineado: bool = True
+    contribucion: Optional[str] = None
+
+
 class EstadoRepo(BaseModel):
     repo_url: Optional[str] = None
     ultimo_commit_sha: Optional[str] = None
@@ -71,6 +84,7 @@ class EstadoRepo(BaseModel):
     ci_status: Literal["pass", "fail", "unknown"] = "unknown"
     demo_url: Optional[str] = None
     demo_activa: bool = False
+    commits: List[CommitInfo] = Field(default_factory=list)
 
 
 class ReporteCompetencias(BaseModel):
@@ -121,6 +135,8 @@ class BacklogItem(BaseModel):
     depende_de: Optional[str] = None
     sprint: Optional[int] = None  # número de sprint asignado
     estado: Literal["backlog", "todo", "in_progress", "done"] = "backlog"
+    estado_revision: str = "pendiente"                  # "pendiente", "aprobado", "observado"
+    comentario_revision: Optional[str] = None
 
 
 class Epica(BaseModel):

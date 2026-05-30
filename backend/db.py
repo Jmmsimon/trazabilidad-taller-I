@@ -60,3 +60,12 @@ def obtener_usuario(uid: str) -> Optional[Dict[str, Any]]:
     if not doc.exists:
         return None
     return {"uid": doc.id, **doc.to_dict()}
+
+
+def obtener_proyecto_por_alumno(alumno_id: str) -> Optional[Dict[str, Any]]:
+    """Busca el proyecto de un alumno por su alumnoId."""
+    docs = db.collection(COLLECTION).where("alumnoId", "==", alumno_id).limit(1).stream()
+    for doc in docs:
+        return {"proyectoId": doc.id, **doc.to_dict()}
+    return None
+

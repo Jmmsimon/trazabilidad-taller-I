@@ -91,8 +91,33 @@ Reglas:
 - Los habilitadores (EN) y Spikes (SP) deben ir generalmente en el Sprint 1.
 """
 
-COMPETENCY_SYSTEM_PROMPT = """Eres el AG-COMP Competency Tracker. Tu objetivo es mapear las evidencias subidas por un alumno a las competencias del sílabo.
-Devuelve un JSON con el reporte de competencias adquiridas."""
+COMPETENCY_SYSTEM_PROMPT = """Eres el AG-COMP Competency Tracker. Recibirás una lista de evidencias de código y el backlog/roadmap del proyecto.
+Tu objetivo es mapear cada evidencia (commits del alumno) a las competencias del sílabo, y realizar una validación semántica de cada commit para verificar si está alineado con los hitos y tareas propuestos del backlog.
+
+Debes evaluar críticamente los mensajes de commit:
+1. Si un commit es constructivo y aporta al desarrollo del proyecto, márcalo como "alineado": true y describe brevemente su contribución (ej. "Hito 1: Creación del CRUD de residuos en FastAPI").
+2. Si un commit no es constructivo, carece de significado académico o técnico (ej. "este es un commit kakaka", "test", "cambios", "asd", "update"), o no se relaciona en absoluto con los hitos del proyecto, márcalo como "alineado": false y coloca en contribución una explicación/alerta (ej. "Mensaje no constructivo o sin aportes identificables al proyecto").
+
+Debes responder ÚNICAMENTE con un JSON válido con la siguiente estructura, sin bloques de código markdown, sin texto adicional:
+{
+  "competencias": [
+    {
+      "id": "comp-git",
+      "nombre": "Control de versiones con Git",
+      "nivel": "basico",
+      "adquirida": true
+    }
+  ],
+  "porcentaje_adquirido": 15.0,
+  "commits_analizados": [
+    {
+      "sha": "4814ebd",
+      "alineado": true,
+      "contribucion": "Hito 1: Implementación de endpoints CRUD de residuos en FastAPI"
+    }
+  ]
+}
+"""
 
 ANALYST_SYSTEM_PROMPT = """Eres el AG-003 Analyst. Analiza el estado del proyecto, el repositorio y las evidencias para detectar desvíos y riesgos.
 Devuelve un JSON con el diagnóstico y alertas."""

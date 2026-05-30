@@ -16,6 +16,7 @@ from db import (
     crear_proyecto, actualizar_proyecto, obtener_proyecto,
     listar_proyectos, proyecto_existe,
     guardar_mensaje_chat, obtener_historial_chat,
+    obtener_usuario,
 )
 from discovery_graph import build_discovery_graph
 from tracking_graph import build_tracking_graph, simular_evidencias
@@ -23,6 +24,7 @@ from schemas import (
     DiscoveryState,
     TrackingState,
     PropuestaTecnica,
+    EstadoRepo,
     propuesta_to_dict,
     dict_to_propuesta,
 )
@@ -53,6 +55,11 @@ class ProjectStartRequest(BaseModel):
 class TrackingStartRequest(BaseModel):
     alumnoId: str
     proyectoId: str
+
+
+class ConfigurationRequest(BaseModel):
+    repo_url: Optional[str] = None
+    demo_url: Optional[str] = None
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -109,7 +116,7 @@ async def run_discovery_task(
                 backlog_scrum_data = result.backlog_scrum.model_dump()
 
             try:
-                crear_proyecto(proyecto_id, {
+                actualizar_proyecto(proyecto_id, {
                     "status": "pending_approval",
                     "scoreValidator": result.score_validator or 0,
                     "propuesta": {
@@ -122,7 +129,6 @@ async def run_discovery_task(
                     "backlog_scrum": backlog_scrum_data,
                     # Guardamos la propuesta completa para el tracking
                     "_propuesta_raw": propuesta_data,
-                    "alumnoId": "",  # Se setea en el request, aquí no llega
                 })
             except Exception as db_err:
                 print(f"[ERROR] Error al guardar en Firestore: {db_err}")
@@ -130,7 +136,7 @@ async def run_discovery_task(
 
             print(f"[OK] Proyecto {proyecto_id} procesado exitosamente.")
         else:
-            crear_proyecto(proyecto_id, {
+            actualizar_proyecto(proyecto_id, {
                 "status": "error",
                 "error": "No se pudo generar la propuesta.",
             })
@@ -140,7 +146,7 @@ async def run_discovery_task(
         import traceback
         traceback.print_exc()
         try:
-            crear_proyecto(proyecto_id, {"status": "error", "error": str(e)})
+            actualizar_proyecto(proyecto_id, {"status": "error", "error": str(e)})
         except Exception:
             pass
 
@@ -161,9 +167,20 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
         if propuesta_raw:
             propuesta_confirmada = dict_to_propuesta(propuesta_raw)
 
+        repo_url = project.get("repo_url")
+        demo_url = project.get("demo_url")
+
+        estado_repo = EstadoRepo(
+            repo_url=repo_url,
+            demo_url=demo_url,
+            ci_status="unknown",
+            demo_activa=False
+        )
+
         initial_state = TrackingState(
             alumno_id=alumno_id,
             propuesta_confirmada=propuesta_confirmada,
+            estado_repo=estado_repo,
         )
 
         graph = build_tracking_graph()
@@ -272,6 +289,37 @@ async def iniciar_tracking(
     return {"proyectoId": proyecto_id, "tracking_status": "processing"}
 
 
+@app.post("/proyectos/{proyecto_id}/configuracion")
+async def guardar_configuracion(proyecto_id: str, req: ConfigurationRequest):
+    try:
+        project = obtener_proyecto(proyecto_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        actualizar_proyecto(proyecto_id, {
+            "repo_url": req.repo_url,
+            "demo_url": req.demo_url,
+        })
+        print(f"[CONFIG] URLs actualizadas para proyecto {proyecto_id}: repo={req.repo_url}, demo={req.demo_url}")
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar configuración: {e}")
+
+
+@app.get("/proyectos/alumno/{alumno_id}")
+async def get_proyecto_alumno(alumno_id: str):
+    """Busca el proyecto de un alumno por su ID."""
+    try:
+        from db import obtener_proyecto_por_alumno
+        p = obtener_proyecto_por_alumno(alumno_id)
+        if not p:
+            return {"proyectoId": None}
+        return {k: v for k, v in p.items() if not k.startswith("_")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/proyectos/{proyecto_id}/tracking/status")
 async def get_tracking_status(proyecto_id: str):
     try:
@@ -319,6 +367,18 @@ class ValidarHitoRequest(BaseModel):
     feedback: str
 
 
+class RevisarTareasHitoRequest(BaseModel):
+    estado_hito: str  # "validado" o "observado"
+    tareas_estado: List[str]
+    tareas_comentarios: List[str]
+
+
+class RevisarBacklogRequest(BaseModel):
+    estado_revision: str  # "aprobado" o "observado"
+    comentario_revision: Optional[str] = None
+
+
+
 # ══════════════════════════════════════════════════════════════════════
 # ENDPOINTS — PROFESOR
 # ══════════════════════════════════════════════════════════════════════
@@ -342,10 +402,24 @@ async def listar_proyectos_profesor():
         if reporte_competencias and isinstance(reporte_competencias, dict):
             porcentaje_competencias = float(reporte_competencias.get("porcentaje_adquirido", 0.0))
 
+        alumno_id = proyecto.get("alumnoId", "")
+        alumno_nombre = alumno_id
+        alumno_email = ""
+        if alumno_id:
+            try:
+                alumno_info = obtener_usuario(alumno_id)
+                if alumno_info:
+                    alumno_nombre = alumno_info.get("nombre", alumno_id)
+                    alumno_email = alumno_info.get("email", "")
+            except Exception:
+                pass
+
         resultado.append({
             "proyectoId": proyecto_id,
             "nombre": proyecto.get("propuesta", {}).get("nombre", proyecto_id),
-            "alumnoId": proyecto.get("alumnoId", ""),
+            "alumnoId": alumno_id,
+            "alumnoNombre": alumno_nombre,
+            "alumnoEmail": alumno_email,
             "status": proyecto.get("status", "processing"),
             "scoreValidator": proyecto.get("scoreValidator", 0),
             "tracking_status": proyecto.get("tracking_status", "not_started"),
@@ -365,8 +439,24 @@ async def detalle_proyecto_profesor(proyecto_id: str):
         raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
     if not proyecto:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+    
     # Excluir campos que empiezan con _
-    return {k: v for k, v in proyecto.items() if not k.startswith("_")}
+    res = {k: v for k, v in proyecto.items() if not k.startswith("_")}
+    
+    # Resolver nombre del alumno
+    alumno_id = res.get("alumnoId", "")
+    res["alumnoNombre"] = alumno_id
+    res["alumnoEmail"] = ""
+    if alumno_id:
+        try:
+            alumno_info = obtener_usuario(alumno_id)
+            if alumno_info:
+                res["alumnoNombre"] = alumno_info.get("nombre", alumno_id)
+                res["alumnoEmail"] = alumno_info.get("email", "")
+        except Exception:
+            pass
+            
+    return res
 
 
 @app.post("/profesor/proyectos/{proyecto_id}/aprobar-roadmap")
@@ -426,6 +516,133 @@ async def validar_hito(proyecto_id: str, hito_index: int, req: ValidarHitoReques
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
     return {"ok": True}
+
+
+@app.post("/profesor/proyectos/{proyecto_id}/hitos/{hito_index}/revisar-tareas")
+async def revisar_tareas_hito(proyecto_id: str, hito_index: int, req: RevisarTareasHitoRequest):
+    try:
+        proyecto = obtener_proyecto(proyecto_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    hitos = proyecto.get("propuesta", {}).get("hitos", [])
+    if hito_index < 0 or hito_index >= len(hitos):
+        raise HTTPException(status_code=404, detail="Hito no encontrado")
+
+    hitos[hito_index]["estado_hito"] = req.estado_hito
+    hitos[hito_index]["tareas_estado"] = req.tareas_estado
+    hitos[hito_index]["tareas_comentarios"] = req.tareas_comentarios
+    
+    if req.estado_hito == "validado":
+        hitos[hito_index]["validado_por_profesor"] = True
+        hitos[hito_index]["feedback_profesor"] = "Hito validado."
+    else:
+        hitos[hito_index]["validado_por_profesor"] = False
+        obs = [c for c in req.tareas_comentarios if c]
+        hitos[hito_index]["feedback_profesor"] = " | ".join(obs) if obs else "Hito observado por el docente."
+
+    try:
+        actualizar_proyecto(proyecto_id, {"propuesta.hitos": hitos})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
+    return {"ok": True}
+
+
+@app.post("/profesor/proyectos/{proyecto_id}/backlog/{item_id}/revisar")
+async def revisar_backlog_item(proyecto_id: str, item_id: str, req: RevisarBacklogRequest):
+    try:
+        proyecto = obtener_proyecto(proyecto_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    backlog_scrum = proyecto.get("backlog_scrum")
+    if not backlog_scrum or "epicas" not in backlog_scrum:
+        raise HTTPException(status_code=404, detail="Backlog Scrum no encontrado")
+
+    found = False
+    for epica in backlog_scrum.get("epicas", []):
+        for item in epica.get("items", []):
+            if item.get("id") == item_id:
+                item["estado_revision"] = req.estado_revision
+                item["comentario_revision"] = req.comentario_revision
+                found = True
+                break
+        if found:
+            break
+
+    if not found:
+        raise HTTPException(status_code=404, detail="Item de backlog no encontrado")
+
+    try:
+        actualizar_proyecto(proyecto_id, {"backlog_scrum": backlog_scrum})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
+    return {"ok": True}
+
+
+@app.post("/proyectos/{proyecto_id}/hitos/{hito_index}/enviar-correccion")
+async def enviar_correccion_hito(proyecto_id: str, hito_index: int):
+    try:
+        proyecto = obtener_proyecto(proyecto_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    hitos = proyecto.get("propuesta", {}).get("hitos", [])
+    if hito_index < 0 or hito_index >= len(hitos):
+        raise HTTPException(status_code=404, detail="Hito no encontrado")
+
+    hitos[hito_index]["estado_hito"] = "corregido"
+    if "tareas_estado" in hitos[hito_index]:
+        hitos[hito_index]["tareas_estado"] = [
+            "corregido" if st == "observado" else st
+            for st in hitos[hito_index]["tareas_estado"]
+        ]
+
+    try:
+        actualizar_proyecto(proyecto_id, {"propuesta.hitos": hitos})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
+    return {"ok": True}
+
+
+@app.post("/proyectos/{proyecto_id}/backlog/{item_id}/corregir")
+async def corregir_backlog_item(proyecto_id: str, item_id: str):
+    try:
+        proyecto = obtener_proyecto(proyecto_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    backlog_scrum = proyecto.get("backlog_scrum")
+    if not backlog_scrum or "epicas" not in backlog_scrum:
+        raise HTTPException(status_code=404, detail="Backlog Scrum no encontrado")
+
+    found = False
+    for epica in backlog_scrum.get("epicas", []):
+        for item in epica.get("items", []):
+            if item.get("id") == item_id:
+                item["estado_revision"] = "corregido"
+                found = True
+                break
+        if found:
+            break
+
+    if not found:
+        raise HTTPException(status_code=404, detail="Item de backlog no encontrado")
+
+    try:
+        actualizar_proyecto(proyecto_id, {"backlog_scrum": backlog_scrum})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
+    return {"ok": True}
+
 
 
 # ══════════════════════════════════════════════════════════════════════

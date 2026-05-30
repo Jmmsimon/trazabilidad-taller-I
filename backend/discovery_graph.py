@@ -66,9 +66,9 @@ async def validator_node(state: DiscoveryState) -> Dict:
             for k, v in feedback.items():
                 if isinstance(v, list):
                     v_str = "\n".join([f"- {item}" for item in v])
-                    feedback_str += f"**{k.capitalize()}:**\n{v_str}\n\n"
+                    feedback_str += f"{k.capitalize()}:\n{v_str}\n\n"
                 else:
-                    feedback_str += f"**{k.capitalize()}:** {v}\n\n"
+                    feedback_str += f"{k.capitalize()}: {v}\n\n"
         else:
             feedback_str = json.dumps(feedback, indent=2, ensure_ascii=False)
         feedback = feedback_str.strip()

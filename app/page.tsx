@@ -16,7 +16,7 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { user, rol, loading, loginGoogle } = useAuth();
+  const { user, rol, loading, loginGoogle, loginAsGuest } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -104,13 +104,26 @@ export default function LoginPage() {
             {isSigningIn ? "Conectando..." : "Continuar con Google"}
           </button>
 
-          <div className="mt-4">
+          <div className="mt-4 space-y-2">
             <button
-              id="btn-guest-bypass"
-              onClick={() => router.push("/dashboard/estudiante")}
-              className="w-full bg-transparent text-zinc-500 text-xs py-2.5 rounded-xl border border-zinc-800 hover:border-zinc-600 hover:text-zinc-300 transition-all"
+              id="btn-guest-estudiante"
+              onClick={async () => {
+                await loginAsGuest("estudiante");
+                router.push("/dashboard/estudiante");
+              }}
+              className="w-full bg-transparent text-indigo-400 text-xs py-2.5 rounded-xl border border-indigo-900/50 hover:border-indigo-600 hover:text-indigo-300 transition-all font-semibold"
             >
-              Probar como Invitado (Bypass)
+              Probar como Estudiante (Invitado)
+            </button>
+            <button
+              id="btn-guest-profesor"
+              onClick={async () => {
+                await loginAsGuest("profesor");
+                router.push("/dashboard/profesor");
+              }}
+              className="w-full bg-transparent text-emerald-400 text-xs py-2.5 rounded-xl border border-emerald-900/50 hover:border-emerald-600 hover:text-emerald-300 transition-all font-semibold"
+            >
+              Probar como Docente (Invitado)
             </button>
           </div>
 
