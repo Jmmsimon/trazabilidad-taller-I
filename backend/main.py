@@ -584,8 +584,28 @@ async def revisar_backlog_item(proyecto_id: str, item_id: str, req: RevisarBackl
     return {"ok": True}
 
 
+class EnviarCorreccionHitoRequest(BaseModel):
+    tareas_corregidas: Optional[List[str]] = None
+
+
+class CorregirBacklogItemRequest(BaseModel):
+    titulo: Optional[str] = None
+    historia_completa: Optional[str] = None
+
+
+import re
+
+def parse_historia_usuario(text: str) -> tuple[str, str, str]:
+    # Patron regex para "Como [rol], quiero [accion] para [beneficio]"
+    patron = r"(?is)^\s*como\s+(.*?)\s*,\s*quiero\s+(.*?)\s+para\s+(.*)$"
+    match = re.match(patron, text)
+    if match:
+        return match.group(1).strip(), match.group(2).strip(), match.group(3).strip()
+    return "usuario", text.strip(), "mejorar el sistema"
+
+
 @app.post("/proyectos/{proyecto_id}/hitos/{hito_index}/enviar-correccion")
-async def enviar_correccion_hito(proyecto_id: str, hito_index: int):
+async def enviar_correccion_hito(proyecto_id: str, hito_index: int, req: EnviarCorreccionHitoRequest):
     try:
         proyecto = obtener_proyecto(proyecto_id)
     except Exception as e:
@@ -598,6 +618,9 @@ async def enviar_correccion_hito(proyecto_id: str, hito_index: int):
         raise HTTPException(status_code=404, detail="Hito no encontrado")
 
     hitos[hito_index]["estado_hito"] = "corregido"
+    if req.tareas_corregidas:
+        hitos[hito_index]["tareas"] = req.tareas_corregidas
+
     if "tareas_estado" in hitos[hito_index]:
         hitos[hito_index]["tareas_estado"] = [
             "corregido" if st == "observado" else st
@@ -612,7 +635,7 @@ async def enviar_correccion_hito(proyecto_id: str, hito_index: int):
 
 
 @app.post("/proyectos/{proyecto_id}/backlog/{item_id}/corregir")
-async def corregir_backlog_item(proyecto_id: str, item_id: str):
+async def corregir_backlog_item(proyecto_id: str, item_id: str, req: CorregirBacklogItemRequest):
     try:
         proyecto = obtener_proyecto(proyecto_id)
     except Exception as e:
@@ -629,6 +652,13 @@ async def corregir_backlog_item(proyecto_id: str, item_id: str):
         for item in epica.get("items", []):
             if item.get("id") == item_id:
                 item["estado_revision"] = "corregido"
+                if req.titulo:
+                    item["titulo"] = req.titulo
+                if req.historia_completa:
+                    como, quiero, para = parse_historia_usuario(req.historia_completa)
+                    item["como"] = como
+                    item["quiero"] = quiero
+                    item["para"] = para
                 found = True
                 break
         if found:

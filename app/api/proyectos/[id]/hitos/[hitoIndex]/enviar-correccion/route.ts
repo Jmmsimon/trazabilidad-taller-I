@@ -8,11 +8,13 @@ export async function POST(
 ) {
   const { id, hitoIndex } = await params;
   try {
+    const body = await request.json().catch(() => ({}));
     const res = await fetch(
       `${BACKEND_URL}/proyectos/${id}/hitos/${hitoIndex}/enviar-correccion`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       }
     );
     const data = await res.json();

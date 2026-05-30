@@ -8,11 +8,13 @@ export async function POST(
 ) {
   const { id, itemId } = await params;
   try {
+    const body = await request.json().catch(() => ({}));
     const res = await fetch(
       `${BACKEND_URL}/proyectos/${id}/backlog/${itemId}/corregir`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       }
     );
     const data = await res.json();

@@ -401,10 +401,27 @@ export default function EstudianteDashboard() {
   const handleCorregirBacklogItem = async (itemId: string) => {
     if (!projectId) return;
     try {
+      const tituloKey = `bl-titulo-${itemId}`;
+      const huKey = `bl-hu-${itemId}`;
+      
+      const newTitulo = editingTasks[tituloKey];
+      const newHu = editingTasks[huKey];
+
       const res = await fetch(`/api/proyectos/${projectId}/backlog/${itemId}/corregir`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titulo: newTitulo,
+          historia_completa: newHu,
+        }),
       });
       if (res.ok) {
+        setEditingTasks(prev => {
+          const n = { ...prev };
+          delete n[tituloKey];
+          delete n[huKey];
+          return n;
+        });
         const resProj = await fetch(`/api/proyectos/alumno/${user?.uid}`);
         const data = await resProj.json();
         setPlan({
