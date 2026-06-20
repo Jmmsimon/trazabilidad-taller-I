@@ -2,6 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { BarChart3, CheckCircle2, AlertCircle } from "lucide-react";
 import { ProyectoDetalle, BacklogItem, BacklogEpica } from "../types";
+import { BacklogReviewCards } from "./BacklogReviewCards";
 
 interface BacklogReviewerProps {
   detalle: ProyectoDetalle;
@@ -127,7 +128,8 @@ export function BacklogReviewer({
             </span>
           </div>
 
-          <div className="overflow-x-auto border border-slate-150 rounded-2xl">
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto border border-slate-150 rounded-2xl">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/50 text-[10px] uppercase font-black tracking-wider text-slate-400">
@@ -263,6 +265,20 @@ export function BacklogReviewer({
                 })()}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="block md:hidden">
+            <BacklogReviewCards
+              detalle={detalle}
+              revisandoBacklogItem={revisandoBacklogItem}
+              setRevisandoBacklogItem={setRevisandoBacklogItem}
+              comentarioBacklog={comentarioBacklog}
+              setComentarioBacklog={setComentarioBacklog}
+              estadoBacklog={estadoBacklog}
+              setEstadoBacklog={setEstadoBacklog}
+              handleGuardarAuditBacklog={handleGuardarAuditBacklog}
+            />
           </div>
         </section>
       )}

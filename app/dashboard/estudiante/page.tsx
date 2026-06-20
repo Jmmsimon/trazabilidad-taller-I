@@ -36,6 +36,7 @@ import { HitosGroup } from "./components/HitosGroup";
 import { BacklogTable } from "./components/BacklogTable";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { RadarChart } from "./components/RadarChart";
+import { BacklogCards } from "./components/BacklogCards";
 import { TIPO_ICONS, SEVERIDAD_COLORS, NIVEL_COLORS, scoreColor, barWidth, getSprintNum } from "./utils";
 
 export default function EstudianteDashboard() {
@@ -107,13 +108,13 @@ export default function EstudianteDashboard() {
         <div className="absolute top-[-25%] left-[-15%] w-[70%] h-[70%] bg-indigo-50/50 rounded-full blur-[150px] pointer-events-none" />
         <div className="absolute bottom-[-25%] right-[-15%] w-[70%] h-[70%] bg-purple-50/50 rounded-full blur-[150px] pointer-events-none" />
 
-        <div className="max-w-[85%] mx-auto px-6 py-12 relative z-10">
+        <div className="w-full max-w-[95%] sm:max-w-[90%] lg:max-w-[85%] mx-auto px-4 sm:px-6 py-6 sm:py-12 relative z-10">
           {/* Navigation Bar */}
           <div className="backdrop-blur-md bg-white/70 border border-slate-200/60 rounded-2xl px-6 py-4 mb-8 flex flex-wrap items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse" />
               <span className="text-xs text-slate-500 font-semibold">
-                Sesión activa: <strong className="text-slate-800">{user?.displayName || user?.email}</strong>
+                Sesión activa: <strong className="text-slate-800 truncate max-w-[120px] sm:max-w-none inline-block align-bottom" title={user?.displayName || user?.email || ""}>{user?.displayName || user?.email}</strong>
               </span>
               <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-[10px] text-indigo-600 font-bold uppercase tracking-wider border border-indigo-100">
                 Estudiante
@@ -351,6 +352,12 @@ export default function EstudianteDashboard() {
                         animation: scan-line 2.5s infinite ease-in-out;
                         pointer-events: none;
                       }
+                      @media (max-width: 400px) {
+                        .agent-flow-container {
+                          transform: scale(0.85);
+                          transform-origin: top center;
+                        }
+                      }
                     `}} />
 
                     {/* Animated Multi-Agent Flow Diagram */}
@@ -370,7 +377,8 @@ export default function EstudianteDashboard() {
                       const isPoActive = activeAgent === "po" && !isPoCompleted;
 
                       return (
-                        <div className="relative w-[360px] h-[324px] mx-auto flex flex-col items-center">
+                          <div className="w-full overflow-hidden flex justify-center py-2">
+                            <div className="agent-flow-container relative w-[360px] h-[324px] flex flex-col items-center flex-shrink-0">
                           {/* SVG Flow Canvas */}
                           <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-0">
                             <defs>
@@ -541,6 +549,7 @@ export default function EstudianteDashboard() {
                             </div>
                           </div>
                         </div>
+                          </div>
                       );
                     })()}
                   </div>
@@ -569,9 +578,9 @@ export default function EstudianteDashboard() {
                   </div>
                 )}
 
-                <div className="flex justify-between items-center bg-white p-8 rounded-3xl border border-slate-200/80 flex-wrap gap-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 gap-4 shadow-sm w-full">
                   <div>
-                    <h1 className="text-3xl font-extrabold text-slate-800 mb-2">{plan.nombre}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2">{plan.nombre}</h1>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold border ${plan.scoreValidator >= 80
                           ? "bg-emerald-50 text-emerald-700 border-emerald-150"
@@ -590,15 +599,15 @@ export default function EstudianteDashboard() {
                         setStack(plan.stack || []);
                         setEditedPlan(null);
                       }}
-                      className="bg-red-50 hover:bg-red-100 text-red-650 px-8 py-3 border border-red-200 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                      className="w-full sm:w-auto bg-red-50 hover:bg-red-100 text-red-650 px-8 py-3 border border-red-200 rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                     >
                       Editar y Regenerar
                     </button>
                   ) : isEditingDraft ? (
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                       <button
                         onClick={handleSaveDraft}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-indigo-100"
+                        className="w-full sm:w-auto justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-indigo-100"
                       >
                         Guardar Cambios
                       </button>
@@ -607,22 +616,22 @@ export default function EstudianteDashboard() {
                           setIsEditingDraft(false);
                           setEditedPlan(null);
                         }}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-650 px-6 py-3 rounded-xl font-bold transition-all border border-slate-250 cursor-pointer shadow-sm"
+                        className="w-full sm:w-auto justify-center bg-slate-100 hover:bg-slate-200 text-slate-650 px-6 py-3 rounded-xl font-bold transition-all border border-slate-250 cursor-pointer shadow-sm"
                       >
                         Cancelar
                       </button>
                     </div>
                   ) : (
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                       <button
                         onClick={startEditing}
-                        className="bg-white hover:bg-slate-50 border border-slate-200 text-indigo-600 hover:text-indigo-700 px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                        className="w-full sm:w-auto justify-center bg-white hover:bg-slate-50 border border-slate-200 text-indigo-600 hover:text-indigo-700 px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                       >
                         Editar Borrador
                       </button>
                       <button
                         onClick={() => setPhase("D")}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-100"
+                        className="w-full sm:w-auto justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-100"
                       >
                         Confirmar plan <Send className="w-4 h-4" />
                       </button>
@@ -631,7 +640,7 @@ export default function EstudianteDashboard() {
                 </div>
 
                 {/* Tabs Switcher for Phase C */}
-                <div className="bg-slate-100/80 border border-slate-200/60 p-1 flex gap-1 rounded-2xl w-full max-w-md shadow-sm">
+                <div className="bg-slate-100/80 border border-slate-200/60 p-1 flex gap-1 rounded-2xl w-full max-w-md shadow-sm overflow-x-auto scrollbar-none">
                   {[
                     { id: "propuesta", label: "Propuesta Técnica", icon: Code },
                     { id: "roadmap", label: "Roadmap e Hitos", icon: Calendar },
@@ -643,14 +652,13 @@ export default function EstudianteDashboard() {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTabC(tab.id as any)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all relative cursor-pointer ${isActive
+                        className={`flex-1 min-w-[110px] sm:min-w-0 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all relative cursor-pointer flex-shrink-0 ${isActive
                             ? "bg-white border border-slate-200 text-slate-800 shadow-sm"
                             : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                       >
                         <Icon className="w-4 h-4 text-indigo-500" />
-                        <span className="hidden sm:inline">{tab.label.split(" ")[0]}</span>
-                        <span className="inline sm:hidden">{tab.label.slice(0, 4)}</span>
+                        <span>{tab.label.split(" ")[0]}</span>
                       </button>
                     );
                   })}
@@ -749,41 +757,58 @@ export default function EstudianteDashboard() {
                       transition={{ duration: 0.2 }}
                       className="space-y-6"
                     >
-                      <div className="bg-white border border-slate-200/80 rounded-3xl p-8 space-y-4 shadow-sm overflow-x-auto">
+                      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
                         <h3 className="text-xl font-bold flex items-center gap-2 text-indigo-650">
                           <Layers className="w-6 h-6" /> Backlog Ágil (Product Owner)
                         </h3>
 
                         {plan.backlog_scrum?.epicas?.length ? (
-                          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/20">
-                            <table className="w-full text-left text-sm text-slate-700 min-w-[950px]">
-                              <thead className="text-xs text-slate-500 uppercase bg-slate-100 border-b border-slate-200/80 font-bold">
-                                <tr>
-                                  <th className="px-4 py-3">ID</th>
-                                  <th className="px-4 py-3">Tipo</th>
-                                  <th className="px-4 py-3 min-w-[150px]">Título</th>
-                                  <th className="px-4 py-3 min-w-[250px]">Descripción / HU</th>
-                                  <th className="px-4 py-3 min-w-[200px]">Criterios de aceptación</th>
-                                  <th className="px-4 py-3 text-center">Est.</th>
-                                  <th className="px-4 py-3">Prioridad</th>
-                                  <th className="px-4 py-3 text-center">Sprint</th>
-                                  <th className="px-4 py-3 text-center">Épica</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-150">
-                                <BacklogTable
-                                  isPhaseD={false}
-                                  isEditingDraft={isEditingDraft}
-                                  editedPlan={editedPlan}
-                                  plan={plan}
-                                  updateBacklogItemField={updateBacklogItemField}
-                                  editingTasks={editingTasks}
-                                  setEditingTasks={setEditingTasks}
-                                  handleCorregirBacklogItem={handleCorregirBacklogItem}
-                                />
-                              </tbody>
-                            </table>
-                          </div>
+                          <>
+                            {/* Desktop View */}
+                            <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/20">
+                              <table className="w-full text-left text-sm text-slate-700 min-w-[950px]">
+                                <thead className="text-xs text-slate-500 uppercase bg-slate-100 border-b border-slate-200/80 font-bold">
+                                  <tr>
+                                    <th className="px-4 py-3">ID</th>
+                                    <th className="px-4 py-3">Tipo</th>
+                                    <th className="px-4 py-3 min-w-[150px]">Título</th>
+                                    <th className="px-4 py-3 min-w-[250px]">Descripción / HU</th>
+                                    <th className="px-4 py-3 min-w-[200px]">Criterios de aceptación</th>
+                                    <th className="px-4 py-3 text-center">Est.</th>
+                                    <th className="px-4 py-3">Prioridad</th>
+                                    <th className="px-4 py-3 text-center">Sprint</th>
+                                    <th className="px-4 py-3 text-center">Épica</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-150">
+                                  <BacklogTable
+                                    isPhaseD={false}
+                                    isEditingDraft={isEditingDraft}
+                                    editedPlan={editedPlan}
+                                    plan={plan}
+                                    updateBacklogItemField={updateBacklogItemField}
+                                    editingTasks={editingTasks}
+                                    setEditingTasks={setEditingTasks}
+                                    handleCorregirBacklogItem={handleCorregirBacklogItem}
+                                  />
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Mobile View */}
+                            <div className="block md:hidden">
+                              <BacklogCards
+                                isPhaseD={false}
+                                isEditingDraft={isEditingDraft}
+                                editedPlan={editedPlan}
+                                plan={plan}
+                                updateBacklogItemField={updateBacklogItemField}
+                                editingTasks={editingTasks}
+                                setEditingTasks={setEditingTasks}
+                                handleCorregirBacklogItem={handleCorregirBacklogItem}
+                              />
+                            </div>
+                          </>
                         ) : (
                           <p className="text-slate-400 text-sm">El formato antiguo no soporta tabla estructurada. Por favor genera un proyecto nuevo.</p>
                         )}
@@ -803,9 +828,9 @@ export default function EstudianteDashboard() {
                 className="space-y-8 animate-fadeIn mx-auto w-full"
               >
                 {/* Header Container */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
+                <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
                   <div>
-                    <h1 className="text-3xl font-extrabold text-slate-800 mb-2">{plan.nombre}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2">{plan.nombre}</h1>
                     <div className="flex items-center gap-2 text-emerald-600">
                       <Activity className="w-4 h-4 animate-pulse text-emerald-500" />
                       <span className="text-xs font-bold uppercase tracking-wider">Activo</span>
@@ -813,23 +838,20 @@ export default function EstudianteDashboard() {
                   </div>
 
                   {/* Metrics Row under Header Title */}
-                  <div className="flex flex-wrap gap-4 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                    <div className="flex-1 min-w-[120px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <div className="text-center sm:text-left">
                       <div className="text-3xl font-black text-indigo-600">{calcularProgreso()}%</div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Progreso</div>
                     </div>
-                    <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
-                    <div className="flex-1 min-w-[120px]">
+                    <div className="text-center sm:text-left border-l border-slate-200 sm:border-l-0 pl-4 sm:pl-0">
                       <div className="text-2xl font-bold text-slate-700">{calcularSemanasTranscurridas()}</div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Semanas</div>
                     </div>
-                    <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
-                    <div className="flex-1 min-w-[120px]">
+                    <div className="text-center sm:text-left border-t border-slate-200 sm:border-t-0 pt-4 sm:pt-0">
                       <div className="text-2xl font-bold text-slate-700">{plan.hitos?.length || 0}</div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Hitos</div>
                     </div>
-                    <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
-                    <div className="flex-1 min-w-[120px]">
+                    <div className="text-center sm:text-left border-t border-l border-slate-200 sm:border-t-0 sm:border-l-0 pt-4 pl-4 sm:pt-0 sm:pl-0">
                       <div className="text-2xl font-bold text-slate-700">{calcularTareasCompletadas()}/{calcularTotalTareas()}</div>
                       <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Tareas</div>
                     </div>
@@ -1041,7 +1063,7 @@ export default function EstudianteDashboard() {
                 )}
 
                 {/* Tabs Bar */}
-                <div className="bg-slate-100/80 border border-slate-200/60 p-1 flex gap-1 rounded-2xl w-full shadow-sm">
+                <div className="bg-slate-100/80 border border-slate-200/60 p-1 flex gap-1 rounded-2xl w-full shadow-sm overflow-x-auto scrollbar-none">
                   {[
                     { id: "roadmap", label: "Roadmap e Hitos", icon: Calendar },
                     { id: "backlog", label: "Kanban y Backlog", icon: Layers },
@@ -1053,14 +1075,13 @@ export default function EstudianteDashboard() {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all relative cursor-pointer ${isActive
+                        className={`flex-1 min-w-[110px] sm:min-w-0 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all relative cursor-pointer flex-shrink-0 ${isActive
                             ? "bg-white border border-slate-200 text-slate-800 shadow-sm"
                             : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                           }`}
                       >
                         <Icon className="w-4 h-4 text-indigo-500" />
-                        <span className="hidden sm:inline">{tab.label.split(" y ")[0]}</span>
-                        <span className="inline sm:hidden">{tab.label.split(" ")[0]}</span>
+                        <span>{tab.label.split(" ")[0]}</span>
                       </button>
                     );
                   })}
@@ -1201,7 +1222,9 @@ export default function EstudianteDashboard() {
                             {/* Backlog Table */}
                             <div>
                               <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Vista Tabla</h4>
-                              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/20">
+                              
+                              {/* Desktop View */}
+                              <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/20">
                                 <table className="w-full text-left text-sm text-slate-700 min-w-[950px]">
                                   <thead className="text-xs text-slate-500 uppercase bg-slate-100 border-b border-slate-200/80 font-bold">
                                     <tr>
@@ -1228,6 +1251,20 @@ export default function EstudianteDashboard() {
                                     />
                                   </tbody>
                                 </table>
+                              </div>
+
+                              {/* Mobile View */}
+                              <div className="block md:hidden">
+                                <BacklogCards
+                                  isPhaseD={true}
+                                  isEditingDraft={false}
+                                  editedPlan={null}
+                                  plan={plan}
+                                  updateBacklogItemField={updateBacklogItemField}
+                                  editingTasks={editingTasks}
+                                  setEditingTasks={setEditingTasks}
+                                  handleCorregirBacklogItem={handleCorregirBacklogItem}
+                                />
                               </div>
                             </div>
                           </div>

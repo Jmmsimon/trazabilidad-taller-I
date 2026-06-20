@@ -92,14 +92,14 @@ export function HitosApprover({
                   key={originalIdx}
                   className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3 shadow-sm"
                 >
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 w-full">
                     <div>
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
                         Semana {hito.semana}
                       </span>
-                      <h4 className="font-bold text-slate-800 text-sm">{hito.nombre}</h4>
+                      <h4 className="font-bold text-slate-800 text-sm mt-0.5">{hito.nombre}</h4>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {hito.estado_hito === "validado" ? (
                         <span className="flex items-center gap-1 text-[9px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                           <CheckCircle2 className="w-3 h-3" /> Validado
@@ -109,7 +109,7 @@ export function HitosApprover({
                           <AlertCircle className="w-3 h-3" /> Observado
                         </span>
                       ) : hito.estado_hito === "corregido" ? (
-                        <span className="flex items-center gap-1 text-[9px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-750 border border-indigo-100">
+                        <span className="flex items-center gap-1 text-[9px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-755 border border-indigo-100">
                           <Activity className="w-3 h-3" /> Corregido
                         </span>
                       ) : (
@@ -128,7 +128,7 @@ export function HitosApprover({
                           }
                           setHitoField(originalIdx, "open", !hitoState.open);
                         }}
-                        className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-600 border border-slate-200 hover:border-indigo-650 text-slate-600 hover:text-white transition-all cursor-pointer"
+                        className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-600 border border-slate-200 hover:border-indigo-655 text-slate-600 hover:text-white transition-all cursor-pointer"
                       >
                         {hitoState.open ? "Cerrar" : "Auditar Hito"}
                       </button>
@@ -190,12 +190,12 @@ export function HitosApprover({
                             const taskComment = (editingTareasComentarios[originalIdx] || [])[tIdx] || "";
                             return (
                               <div key={tIdx} className="bg-slate-50 border border-slate-150 rounded-xl p-3.5 space-y-2">
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                                   <div className="flex gap-2">
                                     <span className="text-xs font-bold text-slate-400 mt-0.5">{tIdx + 1}.</span>
                                     <p className="text-xs text-slate-700 font-semibold leading-relaxed">{tarea}</p>
                                   </div>
-                                  <div className="flex gap-1.5 flex-shrink-0">
+                                  <div className="flex gap-1.5 flex-shrink-0 sm:justify-end">
                                     <button
                                       type="button"
                                       onClick={() => handleToggleTaskStatus(originalIdx, tIdx, "ok")}

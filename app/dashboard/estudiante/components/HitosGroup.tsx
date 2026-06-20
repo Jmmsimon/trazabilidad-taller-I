@@ -67,7 +67,7 @@ export function HitosGroup({
                     : "bg-white border-slate-200/80 hover:border-slate-350 hover:shadow-md"
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="flex-1">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Semana {hito.semana}</span>
                     {isEditingDraft ? (
@@ -86,25 +86,25 @@ export function HitosGroup({
                         className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     ) : (
-                      <h4 className="font-bold text-sm text-slate-800">{hito.nombre}</h4>
+                      <h4 className="font-bold text-sm text-slate-800 mt-0.5">{hito.nombre}</h4>
                     )}
                   </div>
                   {isPhaseD && (
-                    <>
+                    <div className="flex items-center sm:justify-end flex-shrink-0">
                       {isValidado ? (
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-250 flex items-center gap-1 shadow-sm">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
                         </span>
                       ) : isObservado ? (
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-800 border border-red-200 flex items-center gap-1 animate-pulse">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-800 border border-red-200 flex items-center gap-1 animate-pulse shadow-sm">
                           <AlertCircle className="w-3.5 h-3.5 text-red-600" /> Observado
                         </span>
                       ) : isCorregido ? (
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-850 border border-indigo-200 flex items-center gap-1 animate-pulse">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-850 border border-indigo-200 flex items-center gap-1 animate-pulse shadow-sm">
                           <Activity className="w-3.5 h-3.5 text-indigo-650" /> Re-evaluación
                         </span>
                       ) : null}
-                    </>
+                    </div>
                   )}
                 </div>
 

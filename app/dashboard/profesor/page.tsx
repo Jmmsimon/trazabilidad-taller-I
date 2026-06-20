@@ -77,13 +77,13 @@ export default function ProfesorDashboard() {
         <div className="absolute top-[-25%] left-[-15%] w-[70%] h-[70%] bg-indigo-50/50 rounded-full blur-[150px] pointer-events-none" />
         <div className="absolute bottom-[-25%] right-[-15%] w-[70%] h-[70%] bg-purple-50/50 rounded-full blur-[150px] pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-12 relative z-10">
           {/* Navigation Bar */}
           <div className="backdrop-blur-md bg-white/70 border border-slate-200/60 rounded-2xl px-6 py-4 mb-8 flex flex-wrap items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse" />
               <span className="text-xs text-slate-500 font-semibold">
-                Sesión activa: <strong className="text-slate-800">{user?.displayName || user?.email}</strong>
+                Sesión activa: <strong className="text-slate-800 truncate max-w-[120px] sm:max-w-none inline-block align-bottom" title={user?.displayName || user?.email || ""}>{user?.displayName || user?.email}</strong>
               </span>
               <span className="px-2.5 py-0.5 rounded-md bg-slate-105 text-[10px] text-indigo-600 font-bold uppercase tracking-wider border border-indigo-100">
                 Docente
@@ -194,7 +194,7 @@ export default function ProfesorDashboard() {
                       </div>
 
                       {/* Tabs Navigation */}
-                      <div className="flex border-b border-slate-150 mt-6 gap-2">
+                      <div className="flex border-b border-slate-150 mt-6 gap-2 overflow-x-auto scrollbar-none whitespace-nowrap">
                         {[
                           { key: "hitos", label: "Auditoría Hitos", icon: Activity },
                           { key: "backlog", label: "Historias de Usuario", icon: BarChart3 },
@@ -205,7 +205,7 @@ export default function ProfesorDashboard() {
                             <button
                               key={tab.key}
                               onClick={() => setActiveTab(tab.key as any)}
-                              className={`flex items-center gap-2 px-4 py-2 border-b-2 font-bold text-xs transition-all cursor-pointer ${
+                              className={`flex items-center justify-center gap-2 px-4 py-2 border-b-2 font-bold text-xs transition-all cursor-pointer flex-shrink-0 min-w-[120px] sm:min-w-0 ${
                                 activeTab === tab.key
                                   ? "border-indigo-650 text-indigo-650"
                                   : "border-transparent text-slate-400 hover:text-slate-655"
@@ -248,11 +248,11 @@ export default function ProfesorDashboard() {
                                   className="w-full h-24 bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
                                 />
                               </div>
-                              <div className="flex gap-3 flex-wrap pt-1">
+                              <div className="flex flex-col sm:flex-row gap-3 pt-1 w-full sm:w-auto">
                                 <button
                                   onClick={handleAprobar}
                                   disabled={loadingAprobar}
-                                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-md shadow-emerald-100 cursor-pointer"
+                                  className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-md shadow-emerald-100 cursor-pointer w-full sm:w-auto text-center"
                                 >
                                   {loadingAprobar ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -264,7 +264,7 @@ export default function ProfesorDashboard() {
                                 <button
                                   onClick={handleRechazar}
                                   disabled={loadingRechazar}
-                                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-605 hover:bg-red-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-md shadow-red-100 cursor-pointer"
+                                  className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all disabled:opacity-50 shadow-md shadow-red-100 cursor-pointer w-full sm:w-auto text-center"
                                 >
                                   {loadingRechazar ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
