@@ -16,7 +16,8 @@ from db import (
     crear_proyecto, actualizar_proyecto, obtener_proyecto,
     listar_proyectos, proyecto_existe,
     guardar_mensaje_chat, obtener_historial_chat,
-    obtener_usuario,
+    obtener_usuario, listar_usuarios, actualizar_rol_usuario,
+    crear_o_invitar_usuario, eliminar_usuario, actualizar_estado_usuario,
 )
 from discovery_graph import build_discovery_graph
 from tracking_graph import build_tracking_graph, simular_evidencias
@@ -25,6 +26,8 @@ from schemas import (
     TrackingState,
     PropuestaTecnica,
     EstadoRepo,
+    Hito,
+    BacklogScrum,
     propuesta_to_dict,
     dict_to_propuesta,
 )
@@ -61,6 +64,21 @@ class ConfigurationRequest(BaseModel):
     repo_url: Optional[str] = None
     demo_url: Optional[str] = None
 
+
+class UpdateRoleRequest(BaseModel):
+    rol: str
+
+
+class UpdateUserStatusRequest(BaseModel):
+    deshabilitado: bool
+
+
+
+class InviteUserRequest(BaseModel):
+    email: str
+    rol: str
+    nombre: Optional[str] = None
+    password: Optional[str] = None
 
 # ══════════════════════════════════════════════════════════════════════
 # TAREA BACKGROUND — DISCOVERY
@@ -674,6 +692,75 @@ async def corregir_backlog_item(proyecto_id: str, item_id: str, req: CorregirBac
     return {"ok": True}
 
 
+class UpdateBacklogEstadoRequest(BaseModel):
+    estado: str  # "backlog" | "todo" | "in_progress" | "done"
+
+
+@app.post("/proyectos/{proyecto_id}/backlog/{item_id}/estado")
+async def actualizar_estado_backlog_item(proyecto_id: str, item_id: str, req: UpdateBacklogEstadoRequest):
+    """Actualiza el campo 'estado' (kanban) de un ítem del backlog."""
+    VALID_ESTADOS = {"backlog", "todo", "in_progress", "done"}
+    if req.estado not in VALID_ESTADOS:
+        raise HTTPException(status_code=400, detail=f"Estado inválido. Debe ser uno de: {VALID_ESTADOS}")
+
+    try:
+        proyecto = obtener_proyecto(proyecto_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    backlog_scrum = proyecto.get("backlog_scrum")
+    if not backlog_scrum or "epicas" not in backlog_scrum:
+        raise HTTPException(status_code=404, detail="Backlog Scrum no encontrado")
+
+    found = False
+    for epica in backlog_scrum.get("epicas", []):
+        for item in epica.get("items", []):
+            if item.get("id") == item_id:
+                item["estado"] = req.estado
+                found = True
+                break
+        if found:
+            break
+
+    if not found:
+        raise HTTPException(status_code=404, detail="Item de backlog no encontrado")
+
+    try:
+        actualizar_proyecto(proyecto_id, {"backlog_scrum": backlog_scrum})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
+    return {"ok": True}
+
+
+
+class UpdateDraftRequest(BaseModel):
+    hitos: Optional[List[Hito]] = None
+    backlog_scrum: Optional[BacklogScrum] = None
+
+
+@app.post("/proyectos/{proyecto_id}/update-draft")
+async def actualizar_borrador_proyecto(proyecto_id: str, req: UpdateDraftRequest):
+    try:
+        if not proyecto_existe(proyecto_id):
+            raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        
+        updates = {}
+        if req.hitos is not None:
+            updates["propuesta.hitos"] = [h.model_dump() for h in req.hitos]
+        if req.backlog_scrum is not None:
+            updates["backlog_scrum"] = req.backlog_scrum.model_dump()
+            
+        if updates:
+            actualizar_proyecto(proyecto_id, updates)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar borrador: {e}")
+    return {"ok": True}
+
+
 
 # ══════════════════════════════════════════════════════════════════════
 # ENDPOINTS — CHAT
@@ -708,6 +795,54 @@ async def get_historial(proyecto_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al leer historial: {e}")
     return {"historial": historial}
+
+
+# ══════════════════════════════════════════════════════════════════════
+# ENDPOINTS — ADMINISTRADOR
+# ══════════════════════════════════════════════════════════════════════
+@app.get("/admin/usuarios")
+async def get_usuarios():
+    try:
+        return listar_usuarios()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/usuarios/{uid}/rol")
+async def update_user_role(uid: str, req: UpdateRoleRequest):
+    try:
+        actualizar_rol_usuario(uid, req.rol)
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/usuarios/invitar")
+async def invite_user(req: InviteUserRequest):
+    try:
+        invited_id = crear_o_invitar_usuario(req.email, req.rol, req.nombre, req.password)
+        return {"ok": True, "uid": invited_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/admin/usuarios/{uid}")
+async def delete_user(uid: str):
+    try:
+        eliminar_usuario(uid)
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/usuarios/{uid}/estado-cuenta")
+async def change_user_status(uid: str, req: UpdateUserStatusRequest):
+    try:
+        actualizar_estado_usuario(uid, req.deshabilitado)
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 if __name__ == "__main__":

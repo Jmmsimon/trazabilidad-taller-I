@@ -221,6 +221,36 @@ def _get_mock_response(system_prompt: str) -> str:
             "velocidad_estimada": 13
         })
     
+    if "analyst" in prompt_lower:
+        return json.dumps({
+            "score_integridad": 92.0,
+            "diagnostico_riesgo": "El proyecto muestra un excelente nivel de coherencia técnica general. La mayoría de los commits están directamente relacionados con las tareas de desarrollo básico del Sprint 1 (base de datos y login). Se detecta una ligera inactividad en los últimos 3 días, pero sin desvíos críticos en el pipeline o la demo.",
+            "alertas": [
+                {
+                    "tipo": "commit_inactivo",
+                    "mensaje": "Inactividad de commits detectada en el repositorio en las últimas 72 horas.",
+                    "severidad": "baja"
+                }
+            ]
+        }, ensure_ascii=False)
+
+    if "reporter" in prompt_lower:
+        return json.dumps({
+            "resumen_ejecutivo": "El estudiante ha completado satisfactoriamente la configuración inicial y el setup del proyecto. Presenta un progreso constante de acuerdo con el roadmap de 16 semanas. Se observa alta competencia en control de versiones y estructuración de base de datos. Se sugiere mantener el ritmo constante de commits.",
+            "estado_final": {
+                "secciones": [
+                    {
+                        "nombre": "Progreso y Cumplimiento",
+                        "detalles": {
+                            "hitos_completados": "3/16",
+                            "tareas_pendientes": "2",
+                            "score_integridad_promedio": "92.0"
+                        }
+                    }
+                ]
+            }
+        }, ensure_ascii=False)
+
     return "Respuesta simulada del agente."
 
 
