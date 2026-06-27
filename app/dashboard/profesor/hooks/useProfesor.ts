@@ -75,6 +75,25 @@ export function useProfesor() {
     }
   }, []);
 
+  const fetchDetalleSilent = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/profesor/proyectos/${id}`);
+      if (res.ok) {
+        const data: ProyectoDetalle = await res.json();
+        setDetalle(data);
+      }
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    if (view === "detail" && selectedId) {
+      const interval = setInterval(() => fetchDetalleSilent(selectedId), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [view, selectedId, fetchDetalleSilent]);
+
   const handleSelectProject = (id: string) => {
     setSelectedId(id);
     setDetalle(null);
@@ -107,10 +126,10 @@ export function useProfesor() {
           proyectoId: detalle.proyectoId,
         }),
       });
+      // The polling in useEffect will update the UI when the agent finishes
       setTimeout(() => {
-        handleRefetchDetalle();
         setIsAnalyzing(false);
-      }, 8000);
+      }, 3000);
     } catch (e) {
       console.error("Error al iniciar análisis:", e);
       setIsAnalyzing(false);

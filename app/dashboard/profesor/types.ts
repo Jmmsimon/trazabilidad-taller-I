@@ -105,6 +105,7 @@ export interface ProyectoDetalle {
       commits?: CommitInfo[];
     };
   };
+  backlog_audit?: any;
 }
 
 export type FilterStatus = "todos" | "pending_approval" | "active" | "rejected";

@@ -1,4 +1,5 @@
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
+from enum import Enum
 from pydantic import BaseModel, Field
 
 
@@ -208,3 +209,70 @@ def dict_to_propuesta(d: dict) -> PropuestaTecnica:
 
 def dict_to_reporte(d: dict) -> ReporteCompetencias:
     return ReporteCompetencias(**d)
+
+
+# ───────────────────────────────────────────────────────────
+#  Auditoría de Backlog (Agente Auditor)
+# ───────────────────────────────────────────────────────────
+
+
+class SemaforoColor(str, Enum):
+    ROJO = "rojo"        # 0–30%  → abandonado / sin código real
+    NARANJA = "naranja"  # 31–55% → algo avanzó pero muy desfasado
+    AMARILLO = "amarillo"  # 56–80% → avanza, le falta poco
+    VERDE = "verde"      # 81–100% → acorde al backlog
+
+
+class BacklogAuditItem(BaseModel):
+    """Ítem normalizado del backlog del alumno (desde CSV o Notion)."""
+    id: str
+    titulo: str
+    tipo: str = "HU"                   # HU, TA, SP, EN, RN, DO…
+    estado: str = "To Do"             # To Do | In Progress | Done
+    sprint: Optional[int] = None
+    prioridad: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class CodeSummary(BaseModel):
+    """Resumen del repositorio GitHub leído por el agente."""
+    archivos: List[str] = Field(default_factory=list)        # árbol completo del repo
+    snippets: Dict[str, str] = Field(default_factory=dict)   # path → primeras 250 líneas
+    lenguajes: Dict[str, int] = Field(default_factory=dict)  # ext → nro archivos
+    bulk_commit_risk: bool = False     # True si hay commit masivo sospechoso
+    total_commits: int = 0
+    autores_unicos: List[str] = Field(default_factory=list)
+
+
+class AuditItemResult(BaseModel):
+    """Resultado de la auditoría para un ítem del backlog."""
+    id: str
+    titulo: str
+    estado_backlog: str                # lo que dice el backlog (To Do / In Progress / Done)
+    tiene_evidencia: bool = False      # ¿hay código que lo respalde?
+    evidencia: Optional[str] = None   # archivo/función encontrada
+    score_item: float = 0.0           # 0-100
+    nota: Optional[str] = None
+
+
+class BacklogAuditState(BaseModel):
+    """Estado del grafo de auditoría de backlog."""
+    proyecto_id: str = ""
+    repo_url: str = ""
+    backlog_raw: str = ""              # CSV string o JSON de Notion
+    backlog_source: str = "csv"        # "csv" | "notion"
+    # Parsed
+    backlog_items: List[BacklogAuditItem] = Field(default_factory=list)
+    code_summary: Optional[CodeSummary] = None
+    commits_info: List["CommitInfo"] = Field(default_factory=list)
+    # Results
+    audit_results: List[AuditItemResult] = Field(default_factory=list)
+    porcentaje_correspondencia: float = 0.0
+    semaforo: SemaforoColor = SemaforoColor.ROJO
+    desviaciones: List[str] = Field(default_factory=list)
+    reporte_texto: str = ""
+    error: Optional[str] = None
+
+
+# Allow forward refs
+BacklogAuditState.model_rebuild()

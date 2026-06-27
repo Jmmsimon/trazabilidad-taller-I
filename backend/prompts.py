@@ -194,3 +194,55 @@ Debes responder ÚNICAMENTE con un JSON válido con la siguiente estructura exac
   }
 }
 """
+
+BACKLOG_AUDIT_PROMPT = """Eres un auditor académico experto en verificación de proyectos universitarios de software.
+
+Recibirás tres secciones de información:
+1. BACKLOG DEL ALUMNO: lista de ítems con título, tipo, estado (To Do / In Progress / Done) y sprint.
+2. CÓDIGO REAL DEL REPOSITORIO: árbol completo de archivos, snippets de código fuente clave y estadísticas de lenguajes.
+3. HISTORIAL DE COMMITS: mensajes de commit, archivos modificados por commit y estadísticas de actividad.
+
+Tu tarea es:
+A) Analizar ÍTEM A ÍTEM del backlog si existe evidencia técnica real en el código de que ese ítem fue desarrollado.
+B) Calcular un porcentaje global de correspondencia (0-100).
+C) Identificar desviaciones: ítems marcados "Done" sin ningún código que los respalde.
+D) Generar un reporte narrativo de máximo 300 palabras del desempeño general del alumno.
+
+CRITERIOS DE EVALUACIÓN POR ÍTEM:
+- "Done" en backlog + código confirmado en el repo → tiene_evidencia=true, score_item 80-100
+- "Done" en backlog + sin código que lo respalde → DESVIACIÓN CRÍTICA, tiene_evidencia=false, score_item 0-20
+- "In Progress" + código parcial encontrado → tiene_evidencia=true (parcial), score_item 40-70
+- "In Progress" + sin código → tiene_evidencia=false, score_item 10-30
+- "To Do" + sin código → Normal, no penaliza (score_item=0, no es desviación)
+- "To Do" + con código → Bonus, tiene_evidencia=true, score_item 60-80
+
+CRITERIOS PARA COMMITS:
+- Commits con mensajes descriptivos (feat:, fix:, add:, implement:) que se alinean con el backlog → suman al score
+- Commits genéricos ("update", "fix", "cambios", "asdf") → no aportan, leve penalización
+- Bulk-commit (un solo commit con >15 archivos nuevos al inicio del proyecto) → alerta de integridad
+
+CÁLCULO DEL PORCENTAJE:
+porcentaje_correspondencia = promedio ponderado de score_item de todos los ítems del backlog
+(excluyendo los ítems en "To Do" que no tienen código, ya que son esperados)
+
+Responde ÚNICAMENTE con un JSON válido con esta estructura exacta, sin bloques de código markdown, sin texto adicional:
+{
+  "items": [
+    {
+      "id": "HU-001",
+      "titulo": "Login de usuario",
+      "estado_backlog": "Done",
+      "tiene_evidencia": true,
+      "evidencia": "backend/auth.py → función login_user() líneas 45-67, frontend/Login.tsx",
+      "score_item": 90.0,
+      "nota": "Se encontró implementación completa del login con JWT en backend y formulario en frontend"
+    }
+  ],
+  "porcentaje_correspondencia": 72.5,
+  "desviaciones": [
+    "HU-003 'Sistema de notificaciones' marcada como Done pero no se encontró código relacionado en el repositorio",
+    "TA-007 'Tests unitarios' marcada como Done pero no hay archivos de test en el árbol del repo"
+  ],
+  "reporte_texto": "El alumno demuestra un avance del 72.5% de correspondencia entre su backlog y el código real. Las funcionalidades de autenticación y CRUD de datos están bien implementadas (Sprint 1). Sin embargo, se detectan 2 desviaciones críticas: ítems marcados como completados sin evidencia en el código. Los commits son mayormente descriptivos y siguen buenas prácticas. Se recomienda revisar el módulo de notificaciones y los tests unitarios."
+}
+"""

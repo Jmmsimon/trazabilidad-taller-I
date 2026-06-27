@@ -19,9 +19,9 @@ export function ProfesorMetrics({ detalle, isAnalyzing, handleReAnalizar }: Prof
     score >= 80 ? "bg-emerald-500" : score >= 60 ? "bg-amber-500" : "bg-red-500";
 
   return (
-    <div className="space-y-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
       {/* Integridad Card */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4 h-full flex flex-col">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <Shield className="w-3.5 h-3.5" /> Métricas de integridad
         </h3>
@@ -91,17 +91,19 @@ export function ProfesorMetrics({ detalle, isAnalyzing, handleReAnalizar }: Prof
           <p className="text-xs text-slate-400 text-center py-2 italic">Sin datos de tracking.</p>
         )}
 
-        <button
-          onClick={handleReAnalizar}
-          disabled={isAnalyzing}
-          className="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
-        >
-          {isAnalyzing ? "Analizando repositorio..." : "Iniciar Análisis Trazabilidad"}
-        </button>
+        <div className="mt-auto pt-4">
+          <button
+            onClick={handleReAnalizar}
+            disabled={isAnalyzing}
+            className="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            {isAnalyzing ? "Analizando repositorio..." : "Iniciar Análisis Trazabilidad"}
+          </button>
+        </div>
       </div>
 
       {/* Alertas DevOps */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-3">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-3 h-full">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <AlertCircle className="w-3.5 h-3.5" /> Alertas DevOps
         </h3>

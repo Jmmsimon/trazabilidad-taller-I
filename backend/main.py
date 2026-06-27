@@ -844,6 +844,139 @@ async def change_user_status(uid: str, req: UpdateUserStatusRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ══════════════════════════════════════════════════════════════════════
+# ENDPOINTS — AUDITORÍA DE BACKLOG (DOCENTE)
+# ══════════════════════════════════════════════════════════════════════
+
+class BacklogAuditRequest(BaseModel):
+    backlog_csv: Optional[str] = None         # Texto CSV completo
+    backlog_notion_url: Optional[str] = None  # URL pública de Notion
+    repo_url: Optional[str] = None            # Opcional: sobreescribe el del proyecto
+
+
+async def run_backlog_audit_task(proyecto_id: str, backlog_raw: str, backlog_source: str, repo_url: str):
+    """Background task que corre el grafo de auditoría de backlog."""
+    try:
+        from backlog_audit_graph import build_backlog_audit_graph
+        from schemas import BacklogAuditState
+
+        print(f"[BACKLOG-AUDIT] Iniciando auditoría para proyecto {proyecto_id}")
+
+        initial_state = BacklogAuditState(
+            proyecto_id=proyecto_id,
+            repo_url=repo_url,
+            backlog_raw=backlog_raw,
+            backlog_source=backlog_source,
+        )
+
+        graph = build_backlog_audit_graph()
+        result_dict = await graph.ainvoke(initial_state)
+        result = BacklogAuditState(**result_dict)
+
+        # Serializar y guardar en Firestore
+        audit_data = {
+            "audit_status": "error" if result.error else "completed",
+            "semaforo": result.semaforo.value if result.semaforo else "rojo",
+            "porcentaje_correspondencia": result.porcentaje_correspondencia,
+            "audit_results": [r.model_dump() for r in result.audit_results],
+            "desviaciones": result.desviaciones,
+            "reporte_texto": result.reporte_texto,
+            "code_summary": result.code_summary.model_dump() if result.code_summary else None,
+            "backlog_items_count": len(result.backlog_items),
+            "error": result.error,
+        }
+
+        actualizar_proyecto(proyecto_id, {"backlog_audit": audit_data})
+        print(f"[BACKLOG-AUDIT] Auditoría {proyecto_id} completada. Semáforo: {result.semaforo}")
+
+    except Exception as e:
+        print(f"[BACKLOG-AUDIT-ERROR] {e}")
+        import traceback
+        traceback.print_exc()
+        try:
+            actualizar_proyecto(proyecto_id, {
+                "backlog_audit": {
+                    "audit_status": "error",
+                    "error": str(e),
+                }
+            })
+        except Exception:
+            pass
+
+
+@app.post("/profesor/proyectos/{proyecto_id}/backlog-audit")
+async def iniciar_backlog_audit(
+    proyecto_id: str,
+    req: BacklogAuditRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Inicia la auditoría de avances: compara el backlog del alumno con su código GitHub."""
+    try:
+        proyecto = obtener_proyecto(proyecto_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    # Determinar source y raw
+    if req.backlog_notion_url and req.backlog_notion_url.strip():
+        backlog_raw = req.backlog_notion_url.strip()
+        backlog_source = "notion"
+    elif req.backlog_csv and req.backlog_csv.strip():
+        backlog_raw = req.backlog_csv.strip()
+        backlog_source = "csv"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Debes proveer backlog_csv (texto CSV) o backlog_notion_url (URL de Notion)."
+        )
+
+    # Determinar repo_url: el del request sobreescribe al del proyecto
+    repo_url = req.repo_url or proyecto.get("repo_url") or ""
+    if not repo_url:
+        raise HTTPException(
+            status_code=400,
+            detail="No hay URL de repositorio GitHub configurada para este proyecto."
+        )
+
+    # Marcar en Firestore que está en proceso
+    try:
+        actualizar_proyecto(proyecto_id, {
+            "backlog_audit": {"audit_status": "processing"}
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar Firestore: {e}")
+
+    background_tasks.add_task(
+        run_backlog_audit_task, proyecto_id, backlog_raw, backlog_source, repo_url
+    )
+
+    return {"proyectoId": proyecto_id, "audit_status": "processing"}
+
+
+@app.get("/profesor/proyectos/{proyecto_id}/backlog-audit/status")
+async def get_backlog_audit_status(proyecto_id: str):
+    """Devuelve el estado y resultado de la última auditoría de backlog."""
+    try:
+        proyecto = obtener_proyecto(proyecto_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer Firestore: {e}")
+    if not proyecto:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+
+    audit = proyecto.get("backlog_audit", {})
+    return {
+        "proyectoId": proyecto_id,
+        "audit_status": audit.get("audit_status", "not_started"),
+        "semaforo": audit.get("semaforo", None),
+        "porcentaje_correspondencia": audit.get("porcentaje_correspondencia", 0.0),
+        "audit_results": audit.get("audit_results", []),
+        "desviaciones": audit.get("desviaciones", []),
+        "reporte_texto": audit.get("reporte_texto", ""),
+        "backlog_items_count": audit.get("backlog_items_count", 0),
+        "error": audit.get("error", None),
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
@@ -851,3 +984,4 @@ if __name__ == "__main__":
     print("Servidor de Trazabilidad AI -- FastAPI + LangGraph + Firestore")
     print("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

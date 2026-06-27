@@ -19,49 +19,183 @@ from prompts import COMPETENCY_SYSTEM_PROMPT, ANALYST_SYSTEM_PROMPT, REPORTER_SY
 from llm_client import ask_claude, clean_json_response
 
 
-def fetch_github_data(repo_url: str):
-    """Obtiene commits y archivos reales de un repositorio público en GitHub."""
+def fetch_github_data(repo_url: str, deep: bool = False):
+    """Obtiene commits y archivos reales de un repositorio público en GitHub.
+
+    Args:
+        repo_url: URL del repositorio de GitHub.
+        deep: Si es True, realiza una lectura profunda:
+              - Árbol completo de archivos (recursive tree)
+              - Snippets de los primeros archivos de código fuente
+              - Archivos modificados por commit (primeros 5 commits)
+              - Detección de bulk-commit sospechoso
+    """
     if not repo_url or "github.com" not in repo_url:
         return {"success": False}
+
+    # Extensions we care about for deep code reading
+    CODE_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx", ".html", ".css",
+                 ".java", ".go", ".rb", ".php", ".vue", ".svelte",
+                 "requirements.txt", "package.json", "Dockerfile"}
+    MAX_SNIPPET_FILES = 8
+    MAX_SNIPPET_LINES = 250
+
     try:
         parsed = urllib.parse.urlparse(repo_url)
         path_parts = [p for p in parsed.path.split('/') if p]
-        if len(path_parts) >= 2:
-            owner = path_parts[0]
-            repo = path_parts[1]
-            if repo.endswith(".git"):
-                repo = repo[:-4]
-            
-            headers = {"User-Agent": "Trazabilidad-App-AI-Agent"}
-            
-            # Fetch commits
-            commits_url = f"https://api.github.com/repos/{owner}/{repo}/commits"
-            req = urllib.request.Request(commits_url, headers=headers)
-            with urllib.request.urlopen(req, timeout=5) as response:
-                commits = json.loads(response.read().decode())
-                
-            # Fetch contents
-            contents_url = f"https://api.github.com/repos/{owner}/{repo}/contents"
-            req_cont = urllib.request.Request(contents_url, headers=headers)
-            files = []
+        if len(path_parts) < 2:
+            return {"success": False}
+
+        owner = path_parts[0]
+        repo = path_parts[1]
+        if repo.endswith(".git"):
+            repo = repo[:-4]
+
+        headers = {"User-Agent": "Trazabilidad-App-AI-Agent"}
+
+        # ── 1. Commits ──────────────────────────────────────────────
+        commits_url = f"https://api.github.com/repos/{owner}/{repo}/commits?per_page=30"
+        req = urllib.request.Request(commits_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=8) as response:
+            commits = json.loads(response.read().decode())
+
+        # ── 2. Root contents ─────────────────────────────────────────
+        contents_url = f"https://api.github.com/repos/{owner}/{repo}/contents"
+        req_cont = urllib.request.Request(contents_url, headers=headers)
+        files = []
+        try:
+            with urllib.request.urlopen(req_cont, timeout=8) as response:
+                contents = json.loads(response.read().decode())
+                if isinstance(contents, list):
+                    files = [f.get("name") for f in contents]
+        except Exception:
+            pass
+
+        result = {
+            "success": True,
+            "commits": commits,
+            "files": files,
+            "owner": owner,
+            "repo": repo,
+        }
+
+        if not deep:
+            return result
+
+        # ── 3. Deep mode: full file tree ─────────────────────────────
+        tree_files = []
+        snippets = {}
+        lenguajes: dict = {}
+        bulk_commit_risk = False
+        autores_unicos: list = []
+
+        # Get default branch SHA from latest commit
+        default_sha = commits[0].get("sha", "") if commits else ""
+        if default_sha:
+            tree_url = (
+                f"https://api.github.com/repos/{owner}/{repo}"
+                f"/git/trees/{default_sha}?recursive=1"
+            )
             try:
-                with urllib.request.urlopen(req_cont, timeout=5) as response:
-                    contents = json.loads(response.read().decode())
-                    if isinstance(contents, list):
-                        files = [f.get("name") for f in contents]
+                req_tree = urllib.request.Request(tree_url, headers=headers)
+                with urllib.request.urlopen(req_tree, timeout=10) as resp:
+                    tree_data = json.loads(resp.read().decode())
+                    tree_items = tree_data.get("tree", [])
+                    tree_files = [
+                        item["path"] for item in tree_items
+                        if item.get("type") == "blob"
+                    ]
+
+                    # Language stats
+                    for path in tree_files:
+                        ext = "." + path.rsplit(".", 1)[-1] if "." in path else path.split("/")[-1]
+                        ext_lower = ext.lower()
+                        lenguajes[ext_lower] = lenguajes.get(ext_lower, 0) + 1
+
+                    # Code snippets — pick up to MAX_SNIPPET_FILES relevant files
+                    snippet_candidates = [
+                        p for p in tree_files
+                        if any(
+                            p.endswith(ext) or p.split("/")[-1] == ext
+                            for ext in CODE_EXTS
+                        )
+                        and not any(x in p for x in ["node_modules", ".git", "__pycache__", "dist", "build"])
+                    ][:MAX_SNIPPET_FILES]
+
+                    for file_path in snippet_candidates:
+                        blob_url = (
+                            f"https://api.github.com/repos/{owner}/{repo}"
+                            f"/contents/{urllib.parse.quote(file_path)}"
+                        )
+                        try:
+                            req_blob = urllib.request.Request(blob_url, headers=headers)
+                            with urllib.request.urlopen(req_blob, timeout=6) as resp_blob:
+                                blob_data = json.loads(resp_blob.read().decode())
+                                import base64
+                                content_b64 = blob_data.get("content", "")
+                                if content_b64:
+                                    decoded = base64.b64decode(content_b64).decode("utf-8", errors="replace")
+                                    lines = decoded.splitlines()[:MAX_SNIPPET_LINES]
+                                    snippets[file_path] = "\n".join(lines)
+                        except Exception:
+                            pass
+
+            except Exception as e:
+                print(f"[GITHUB-TREE-WARNING] No se pudo leer árbol recursivo: {e}")
+
+        # ── 4. Per-commit file diffs (first 5 commits) ───────────────
+        commits_with_files = []
+        for commit in (commits[:5] if deep else []):
+            sha = commit.get("sha", "")
+            try:
+                detail_url = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}"
+                req_d = urllib.request.Request(detail_url, headers=headers)
+                with urllib.request.urlopen(req_d, timeout=6) as resp_d:
+                    detail = json.loads(resp_d.read().decode())
+                    changed_files = [f.get("filename", "") for f in detail.get("files", [])]
+                    commits_with_files.append({
+                        "sha": sha[:7],
+                        "message": commit.get("commit", {}).get("message", ""),
+                        "date": commit.get("commit", {}).get("author", {}).get("date", ""),
+                        "author": commit.get("commit", {}).get("author", {}).get("name", ""),
+                        "url": commit.get("html_url", ""),
+                        "files_changed": changed_files,
+                        "files_count": len(changed_files),
+                    })
+                    # Bulk-commit detection: first commit that touches >15 files
+                    if len(changed_files) > 15 and not bulk_commit_risk:
+                        # Sospechoso si es uno de los primeros 2 commits
+                        commit_index = commits.index(commit)
+                        if commit_index <= 2:
+                            bulk_commit_risk = True
             except Exception:
                 pass
-                
-            return {
-                "success": True,
-                "commits": commits,
-                "files": files,
-                "owner": owner,
-                "repo": repo
-            }
+
+        # ── 5. Unique authors ─────────────────────────────────────────
+        seen_authors = set()
+        for c in commits:
+            author = c.get("commit", {}).get("author", {}).get("name", "")
+            if author and author not in seen_authors:
+                seen_authors.add(author)
+                autores_unicos.append(author)
+
+        if deep:
+            result.update({
+                "tree_files": tree_files,
+                "snippets": snippets,
+                "lenguajes": lenguajes,
+                "bulk_commit_risk": bulk_commit_risk,
+                "commits_with_files": commits_with_files,
+                "total_commits": len(commits),
+                "autores_unicos": autores_unicos,
+            })
+
+        return result
+
     except Exception as e:
-        print(f"[GITHUB-READER-WARNING] No se pudo leer el repo de forma directa ({e}). Usando fallback.")
+        print(f"[GITHUB-READER-WARNING] No se pudo leer el repo ({e}). Usando fallback.")
     return {"success": False}
+
 
 
 # ── AG-DEVOPS ────────────────────────────────────────────────────────

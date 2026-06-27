@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   XCircle,
   LogOut,
+  Gauge,
 } from "lucide-react";
 import { useProfesor } from "./hooks/useProfesor";
 import { ProjectSelector } from "./components/ProjectSelector";
@@ -23,6 +24,7 @@ import { ProfesorMetrics } from "./components/ProfesorMetrics";
 import { HitosApprover } from "./components/HitosApprover";
 import { BacklogReviewer } from "./components/BacklogReviewer";
 import { GitCommitsTracker } from "./components/GitCommitsTracker";
+import { BacklogAuditor } from "./components/BacklogAuditor";
 
 export default function ProfesorDashboard() {
   const router = useRouter();
@@ -68,7 +70,7 @@ export default function ProfesorDashboard() {
     getCommitChartData,
   } = useProfesor();
 
-  const [activeTab, setActiveTab] = useState<"hitos" | "backlog" | "commits">("hitos");
+  const [activeTab, setActiveTab] = useState<"hitos" | "backlog" | "commits" | "auditoria">("hitos");
 
   return (
     <AuthGuard rolRequerido="profesor">
@@ -199,6 +201,7 @@ export default function ProfesorDashboard() {
                           { key: "hitos", label: "Auditoría Hitos", icon: Activity },
                           { key: "backlog", label: "Historias de Usuario", icon: BarChart3 },
                           { key: "commits", label: "Control Git", icon: GitCommit },
+                          { key: "auditoria", label: "Auditoría Avances", icon: Gauge },
                         ].map((tab) => {
                           const IconComp = tab.icon;
                           return (
@@ -222,12 +225,21 @@ export default function ProfesorDashboard() {
                 </div>
 
                 {detalle && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Columna Izquierda (Tabs del Proyecto) */}
-                    <div className="lg:col-span-2 space-y-6">
+                  <div className="flex flex-col gap-8">
+                    {/* Contenido Principal (Tabs del Proyecto) */}
+                    <div className="w-full space-y-6">
                       
                       {activeTab === "hitos" && (
                         <div className="space-y-6">
+                          {/* Métricas Inferiores movidas arriba */}
+                          <div className="w-full">
+                            <ProfesorMetrics
+                              detalle={detalle}
+                              isAnalyzing={isAnalyzing}
+                              handleReAnalizar={handleReAnalizar}
+                            />
+                          </div>
+
                           {/* Panel Auditoría de Roadmap */}
                           {detalle.status === "pending_approval" && (
                             <section className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
@@ -323,15 +335,14 @@ export default function ProfesorDashboard() {
                           getCommitChartData={getCommitChartData}
                         />
                       )}
-                    </div>
 
-                    {/* Columna Derecha (Sidebar de Métricas) */}
-                    <div className="space-y-6">
-                      <ProfesorMetrics
-                        detalle={detalle}
-                        isAnalyzing={isAnalyzing}
-                        handleReAnalizar={handleReAnalizar}
-                      />
+                      {activeTab === "auditoria" && (
+                        <BacklogAuditor
+                          proyectoId={detalle.proyectoId}
+                          repoUrl={detalle.repo_url ?? null}
+                          initialAudit={detalle.backlog_audit}
+                        />
+                      )}
                     </div>
                   </div>
                 )}
