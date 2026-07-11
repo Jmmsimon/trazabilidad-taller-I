@@ -68,7 +68,7 @@ export function BacklogTable({
     return [
       separatorRow,
       ...itemsSubset.map((item) => {
-        const isObs = isPhaseD && item.estado_revision === "observado";
+        const isObs = isPhaseD && (item.estado_revision === "observado" || item.estado_revision === "corregido");
         const isCor = isPhaseD && item.estado_revision === "corregido";
         const isApr = isPhaseD && item.estado_revision === "aprobado";
 

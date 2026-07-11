@@ -166,14 +166,14 @@ export function HitosGroup({
                               }}
                               className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             />
-                          ) : isPhaseD && tState === "observado" ? (
+                          ) : isPhaseD && (tState === "observado" || tState === "corregido") ? (
                             <input
                               type="text"
                               value={editedText}
                               onChange={(e) =>
                                 setEditingTasks((prev) => ({ ...prev, [taskKey]: e.target.value }))
                               }
-                              className="flex-1 bg-white border border-red-300 focus:border-indigo-500 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-medium focus:outline-none transition-colors"
+                              className="flex-1 bg-white border border-indigo-350 focus:border-indigo-500 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-medium focus:outline-none transition-colors"
                             />
                           ) : (
                             <span className={tState === "corregido" ? "text-slate-700 font-medium" : "text-slate-600"}>

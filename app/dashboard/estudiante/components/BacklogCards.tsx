@@ -65,7 +65,7 @@ export function BacklogCards({
         ) : (
           <div className="space-y-4">
             {itemsSubset.map((item) => {
-              const isObs = isPhaseD && item.estado_revision === "observado";
+              const isObs = isPhaseD && (item.estado_revision === "observado" || item.estado_revision === "corregido");
               const isCor = isPhaseD && item.estado_revision === "corregido";
               const isApr = isPhaseD && item.estado_revision === "aprobado";
 
