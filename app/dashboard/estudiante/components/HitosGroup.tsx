@@ -208,12 +208,6 @@ export function HitosGroup({
                         Corrección enviada — esperando re-evaluación
                       </div>
                     )}
-                    
-                    {!isObservado && !isCorregido && (
-                      <button className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200/70 py-2 rounded-xl text-xs font-bold text-slate-700 flex justify-center gap-2 transition-colors cursor-pointer shadow-sm border-none">
-                        <Plus className="w-3.5 h-3.5 mt-0.5" /> Subir Evidencia
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
