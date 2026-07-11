@@ -105,6 +105,11 @@ export interface ProyectoDetalle {
       commits?: CommitInfo[];
     };
   };
+  tracking_history?: Array<{
+    fecha: string;
+    score_integridad: number;
+    porcentaje_competencias: number;
+  }>;
   backlog_audit?: any;
 }
 

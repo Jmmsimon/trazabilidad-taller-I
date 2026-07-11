@@ -21,7 +21,9 @@ import {
   Bot,
   GitBranch,
   Award,
+  Trophy,
 } from "lucide-react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useProfesor } from "./hooks/useProfesor";
 import { ProjectSelector } from "./components/ProjectSelector";
 import { ProfesorMetrics } from "./components/ProfesorMetrics";
@@ -29,6 +31,8 @@ import { HitosApprover } from "./components/HitosApprover";
 import { BacklogReviewer } from "./components/BacklogReviewer";
 import { GitCommitsTracker } from "./components/GitCommitsTracker";
 import { BacklogAuditor } from "./components/BacklogAuditor";
+import { RadarChart } from "../estudiante/components/RadarChart";
+import { NIVEL_COLORS } from "./types";
 
 export default function ProfesorDashboard() {
   const router = useRouter();
@@ -83,7 +87,7 @@ export default function ProfesorDashboard() {
     setToast,
   } = useProfesor();
 
-  const [activeTab, setActiveTab] = useState<"hitos" | "backlog" | "commits" | "auditoria">("hitos");
+  const [activeTab, setActiveTab] = useState<"hitos" | "backlog" | "commits" | "auditoria" | "analitica">("hitos");
 
   return (
     <AuthGuard rolRequerido="profesor">
@@ -216,6 +220,7 @@ export default function ProfesorDashboard() {
                           { key: "backlog", label: "Historias de Usuario", icon: BarChart3 },
                           { key: "commits", label: "Control Git", icon: GitCommit },
                           { key: "auditoria", label: "Auditoría Avances", icon: Gauge },
+                          { key: "analitica", label: "Analítica", icon: BarChart3 },
                         ].map((tab) => {
                           const IconComp = tab.icon;
                           return (
@@ -361,6 +366,108 @@ export default function ProfesorDashboard() {
                           repoUrl={detalle.repo_url ?? null}
                           initialAudit={detalle.backlog_audit}
                         />
+                      )}
+
+                      {activeTab === "analitica" && (
+                        <div className="space-y-6">
+                          <div className="bg-white border border-slate-200/80 rounded-3xl p-8 shadow-sm space-y-6">
+                            <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4 flex-wrap">
+                              <div className="flex items-center gap-2 text-indigo-650">
+                                <BarChart3 className="w-6 h-6" />
+                                <h3 className="text-xl font-bold">Análisis de Competencias</h3>
+                              </div>
+                            </div>
+
+                            {detalle.tracking && detalle.tracking.reporte_competencias?.competencias?.length ? (
+                              <div className="space-y-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                                  {/* Radar Chart Section */}
+                                  {detalle.tracking.reporte_competencias.competencias.length >= 3 && (
+                                    <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Radar de Competencias</h4>
+                                      <RadarChart competencias={detalle.tracking.reporte_competencias.competencias as any} />
+                                    </div>
+                                  )}
+
+                                  {/* Line Chart Section (Historial de Avance) */}
+                                  <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                                      <Activity className="w-3.5 h-3.5 text-indigo-500" /> Historial de Desempeño
+                                    </h4>
+                                    {detalle.tracking_history && detalle.tracking_history.length > 0 ? (
+                                      <div className="w-full h-[300px] mt-2">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <LineChart data={detalle.tracking_history} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={9} />
+                                            <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
+                                            <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
+                                            <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                            <Line name="Score Integridad" type="monotone" dataKey="score_integridad" stroke="#6366f1" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                                            <Line name="% Competencias" type="monotone" dataKey="porcentaje_competencias" stroke="#10b981" strokeWidth={2.5} />
+                                          </LineChart>
+                                        </ResponsiveContainer>
+                                      </div>
+                                    ) : (
+                                      <div className="h-[300px] flex items-center justify-center text-slate-450 text-xs italic">
+                                        Historial insuficiente. Realiza más análisis para visualizar la línea de tiempo.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Competencies List Section */}
+                                <div className="w-full space-y-4">
+                                  <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-2">Resumen Académico</h4>
+
+                                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                                    {detalle.tracking.reporte_competencias.competencias.map((c) => {
+                                      const levelColor = NIVEL_COLORS[c.nivel] || "text-slate-500";
+                                      return (
+                                        <div
+                                          key={c.id}
+                                          className={`flex items-center justify-between border rounded-2xl p-4 transition-all ${c.adquirida
+                                              ? "bg-indigo-50/30 border-indigo-150"
+                                              : "bg-slate-50/50 border-slate-200"
+                                            }`}
+                                        >
+                                          <div className="flex items-center gap-3 min-w-0">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${c.adquirida ? "bg-indigo-100 text-indigo-600" : "bg-slate-200 text-slate-500"
+                                              }`}>
+                                              <Trophy className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="text-xs font-bold text-slate-800 truncate">{c.nombre}</p>
+                                              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                                                Nivel: <span className={`${levelColor} font-bold`}>{c.nivel}</span>
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          <div>
+                                            {c.adquirida ? (
+                                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                                Adquirida
+                                              </span>
+                                            ) : (
+                                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                                En progreso
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-10 text-slate-500 italic text-sm">
+                                No hay datos de analítica de competencias aún. Completa el análisis de trazabilidad.
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
