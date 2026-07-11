@@ -65,7 +65,7 @@ export function BacklogCards({
         ) : (
           <div className="space-y-4">
             {itemsSubset.map((item) => {
-              const isObs = isPhaseD && (item.estado_revision === "observado" || item.estado_revision === "corregido");
+              const isObs = isPhaseD && item.estado_revision !== "aprobado";
               const isCor = isPhaseD && item.estado_revision === "corregido";
               const isApr = isPhaseD && item.estado_revision === "aprobado";
 
@@ -282,13 +282,19 @@ export function BacklogCards({
                           <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-250 flex items-center gap-1 shadow-sm">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobado
                           </span>
-                        ) : isCor ? (
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-105 bg-indigo-100 text-indigo-850 border border-indigo-200 flex items-center gap-1 animate-pulse shadow-sm">
-                            <Activity className="w-3.5 h-3.5 text-indigo-650" /> Re-eval.
-                          </span>
-                        ) : isObs ? (
-                          <div className="space-y-2 w-full min-w-[200px]">
-                            {item.comentario_revision && (
+                        ) : (
+                          <div className="space-y-2 w-full min-w-[200px] mx-auto">
+                            {item.estado_revision === "corregido" && (
+                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 block text-center">
+                                Re-evaluación
+                              </span>
+                            )}
+                            {item.estado_revision === "pendiente" && (
+                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-500 block text-center">
+                                Pendiente
+                              </span>
+                            )}
+                            {item.comentario_revision && item.estado_revision === "observado" && (
                               <div className="flex gap-2 bg-red-50 border border-red-100 rounded-xl p-2.5">
                                 <MessageSquare className="w-4 h-4 text-red-650 flex-shrink-0 mt-0.5" />
                                 <p className="text-[11px] text-red-750 italic leading-snug">{item.comentario_revision}</p>
@@ -296,15 +302,12 @@ export function BacklogCards({
                             )}
                             <button
                               onClick={() => handleCorregirBacklogItem(item.id)}
-                              className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+                              className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer border-none"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Marcar como Corregido
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {item.estado_revision === "observado" ? "Marcar como Corregido" : "Guardar Cambios"}
                             </button>
                           </div>
-                        ) : (
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200/80">
-                            Pendiente
-                          </span>
                         )
                       ) : (
                         <span className="font-mono text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">

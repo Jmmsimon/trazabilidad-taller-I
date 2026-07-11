@@ -166,7 +166,7 @@ export function HitosGroup({
                               }}
                               className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             />
-                          ) : isPhaseD && (tState === "observado" || tState === "corregido") ? (
+                          ) : isPhaseD && hito.estado_hito !== "validado" ? (
                             <input
                               type="text"
                               value={editedText}
@@ -192,28 +192,29 @@ export function HitosGroup({
                   })}
                 </ul>
 
-                {isPhaseD && (
-                  <>
-                    {isObservado && (
-                      <button
-                        onClick={() => handleEnviarCorreccionHito(i)}
-                        className="w-full mt-2 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-750 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Marcar como Corregido
-                      </button>
-                    )}
+                {isPhaseD && !isValidado && (
+                  <div className="space-y-2 mt-2">
+                    <button
+                      onClick={() => handleEnviarCorreccionHito(i)}
+                      className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-indigo-150 border-none"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {isObservado ? "Marcar como Corregido" : "Guardar Cambios Hito"}
+                    </button>
+
                     {isCorregido && (
                       <div className="flex gap-2 rounded-xl bg-indigo-50 border border-indigo-100 p-2.5 text-xs text-indigo-800">
                         <Activity className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-indigo-600 animate-pulse" />
                         Corrección enviada — esperando re-evaluación
                       </div>
                     )}
-                    {!isObservado && !isCorregido && !isValidado && (
-                      <button className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200/70 py-2 rounded-xl text-xs font-bold text-slate-700 flex justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                    
+                    {!isObservado && !isCorregido && (
+                      <button className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200/70 py-2 rounded-xl text-xs font-bold text-slate-700 flex justify-center gap-2 transition-colors cursor-pointer shadow-sm border-none">
                         <Plus className="w-3.5 h-3.5 mt-0.5" /> Subir Evidencia
                       </button>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             );

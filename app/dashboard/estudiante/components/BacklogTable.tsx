@@ -68,7 +68,7 @@ export function BacklogTable({
     return [
       separatorRow,
       ...itemsSubset.map((item) => {
-        const isObs = isPhaseD && (item.estado_revision === "observado" || item.estado_revision === "corregido");
+        const isObs = isPhaseD && item.estado_revision !== "aprobado";
         const isCor = isPhaseD && item.estado_revision === "corregido";
         const isApr = isPhaseD && item.estado_revision === "aprobado";
 
@@ -89,7 +89,7 @@ export function BacklogTable({
           <tr
             key={item.id}
             className={`border-b border-slate-200 hover:bg-slate-50/70 transition-colors ${
-              isObs
+              item.estado_revision === "observado"
                 ? "bg-red-50/40 hover:bg-red-50/80"
                 : isCor
                 ? "bg-indigo-50/30 hover:bg-indigo-50/60"
@@ -268,29 +268,32 @@ export function BacklogTable({
                   <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-250 flex items-center gap-1 justify-center shadow-sm">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobado
                   </span>
-                ) : isCor ? (
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-105 bg-indigo-100 text-indigo-850 border border-indigo-200 flex items-center gap-1 justify-center animate-pulse shadow-sm">
-                    <Activity className="w-3.5 h-3.5 text-indigo-600" /> Re-eval.
-                  </span>
-                ) : isObs ? (
-                  <div className="space-y-1.5 min-w-[120px]">
-                    {item.comentario_revision && (
+                ) : (
+                  <div className="space-y-1.5 min-w-[120px] mx-auto">
+                    {item.estado_revision === "corregido" && (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 block text-center">
+                        Re-evaluación
+                      </span>
+                    )}
+                    {item.estado_revision === "pendiente" && (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 block text-center">
+                        Pendiente
+                      </span>
+                    )}
+                    {item.comentario_revision && item.estado_revision === "observado" && (
                       <div className="flex gap-1 bg-red-50 border border-red-100 rounded-lg p-1.5 text-left">
-                        <MessageSquare className="w-3.5 h-3.5 text-red-650 flex-shrink-0 mt-0.5" />
+                        <MessageSquare className="w-3.5 h-3.5 text-red-655 flex-shrink-0 mt-0.5" />
                         <p className="text-[10px] text-red-700 italic leading-tight">{item.comentario_revision}</p>
                       </div>
                     )}
                     <button
                       onClick={() => handleCorregirBacklogItem(item.id)}
-                      className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm"
+                      className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm border-none"
                     >
-                      <CheckCircle2 className="w-3 h-3" /> Marcar Corregido
+                      <CheckCircle2 className="w-3 h-3" />
+                      {item.estado_revision === "observado" ? "Marcar Corregido" : "Guardar Cambios"}
                     </button>
                   </div>
-                ) : (
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200/80">
-                    Pendiente
-                  </span>
                 )
               ) : (
                 <span className="font-mono text-xs text-indigo-600 font-semibold">{item.epicaId}</span>
