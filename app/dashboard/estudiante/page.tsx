@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthGuard } from "@/components/auth-guard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import {
@@ -26,12 +27,13 @@ import {
   MessageSquare,
   BarChart3,
   Shield,
+  Copy,
   ArrowUp,
   ArrowRight,
 } from "lucide-react";
 
 import { useEstudianteProyecto } from "./hooks/useEstudianteProyecto";
-import { Radar, RadarChart as RechartsRadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
+import { Radar, RadarChart as RechartsRadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { HitosGroup } from "./components/HitosGroup";
 import { BacklogTable } from "./components/BacklogTable";
 import { KanbanBoard } from "./components/KanbanBoard";
@@ -84,10 +86,20 @@ export default function EstudianteDashboard() {
     addTag,
     removeTag,
     calcularProgreso,
+    handleDescargarPDF,
   } = useEstudianteProyecto(user);
 
   const [activeTab, setActiveTab] = useState<"roadmap" | "backlog" | "analitica">("roadmap");
   const [activeTabC, setActiveTabC] = useState<"propuesta" | "roadmap" | "backlog">("propuesta");
+
+  const [copiedLink, setCopiedLink] = useState(false);
+  const handleCopyLink = () => {
+    if (!projectId) return;
+    const url = `${window.location.origin}/portfolio/${projectId}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
 
   const calcularSemanasTranscurridas = () => {
     return plan?.hitos?.filter(h => h.estado_hito === "aprobado").length || 0;
@@ -134,13 +146,14 @@ export default function EstudianteDashboard() {
                   Alternar Vista Docente
                 </button>
               )}
+              <ThemeToggle />
               <button
                 id="btn-logout"
                 onClick={async () => {
                   await logout();
                   router.push("/");
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-650 text-xs font-bold transition-all shadow-sm"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-650 text-xs font-bold transition-all shadow-sm cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Cerrar Sesión
@@ -1046,6 +1059,12 @@ export default function EstudianteDashboard() {
                             <Rocket className="w-3.5 h-3.5" /> Demo En Vivo
                           </a>
                         )}
+                        <button
+                          onClick={handleDescargarPDF}
+                          className="flex items-center gap-1.5 text-indigo-650 hover:text-indigo-750 hover:underline cursor-pointer font-semibold border-none bg-transparent"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-indigo-500" /> Reporte PDF
+                        </button>
                         <span className="flex items-center gap-1">
                           CI Status:
                           <span className={`font-bold uppercase ${tracking.data.estado_repo.ci_status === "pass"
@@ -1286,19 +1305,59 @@ export default function EstudianteDashboard() {
                       className="space-y-6"
                     >
                       <div className="bg-white border border-slate-200/80 rounded-3xl p-8 shadow-sm space-y-6">
-                        <div className="flex items-center gap-2 text-indigo-650">
-                          <BarChart3 className="w-6 h-6" />
-                          <h3 className="text-xl font-bold">Análisis de Competencias</h3>
+                        <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4 flex-wrap">
+                          <div className="flex items-center gap-2 text-indigo-650">
+                            <BarChart3 className="w-6 h-6" />
+                            <h3 className="text-xl font-bold">Análisis de Competencias</h3>
+                          </div>
+                          {projectId && (
+                            <button
+                              onClick={handleCopyLink}
+                              className="py-2 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                            >
+                              <Copy className="w-4 h-4 text-emerald-500" />
+                              {copiedLink ? "¡Enlace Copiado!" : "Compartir Portafolio"}
+                            </button>
+                          )}
                         </div>
 
                         {tracking.status === "completed" && tracking.data?.reporte_competencias?.competencias?.length ? (
-                          <div className="flex flex-col gap-8 items-center">
-                            {/* Radar Chart Section */}
-                            {tracking.data.reporte_competencias.competencias.length >= 3 && (
-                              <div className="w-full flex justify-center py-6 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
-                                <RadarChart competencias={tracking.data.reporte_competencias.competencias} />
+                          <div className="space-y-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                              {/* Radar Chart Section */}
+                              {tracking.data.reporte_competencias.competencias.length >= 3 && (
+                                <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Radar de Competencias</h4>
+                                  <RadarChart competencias={tracking.data.reporte_competencias.competencias} />
+                                </div>
+                              )}
+
+                              {/* Line Chart Section (Historial de Avance) */}
+                              <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                                  <Activity className="w-3.5 h-3.5 text-indigo-500" /> Historial de Desempeño
+                                </h4>
+                                {tracking.data.tracking_history && tracking.data.tracking_history.length > 0 ? (
+                                  <div className="w-full h-[300px] mt-2">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <LineChart data={tracking.data.tracking_history} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                        <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={9} />
+                                        <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
+                                        <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
+                                        <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                        <Line name="Score Integridad" type="monotone" dataKey="score_integridad" stroke="#6366f1" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                                        <Line name="% Competencias" type="monotone" dataKey="porcentaje_competencias" stroke="#10b981" strokeWidth={2.5} />
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                ) : (
+                                  <div className="h-[300px] flex items-center justify-center text-slate-450 text-xs italic">
+                                    Historial insuficiente. Realiza más análisis para visualizar la línea de tiempo.
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
 
                             {/* Competencies List Section */}
                             <div className="w-full space-y-4">

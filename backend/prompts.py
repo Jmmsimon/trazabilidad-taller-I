@@ -157,6 +157,7 @@ Debes analizar críticamente la relación entre:
 Reglas para calcular el score_integridad (0 a 100):
 - Comienza con 100.0.
 - Resta puntos por cada alerta de desvío detectada (ej. -10 por pipeline roto, -15 por tareas marcadas como listas sin commits de respaldo, -20 por mensajes de commit no constructivos o inactividad extrema).
+- CRÍTICO: Si no se ha proporcionado una URL de despliegue o no está activa, debes agregar obligatoriamente la alerta "demo_caida" con severidad "critica" y el mensaje exacto: "No se ha proporcionado una URL de despliegue activo, lo que impide la verificación del estado funcional y la progresión del proyecto."
 
 Debes responder ÚNICAMENTE con un JSON válido con esta estructura exacta, sin bloques de código markdown, sin texto adicional:
 {

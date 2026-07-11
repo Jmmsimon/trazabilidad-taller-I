@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AuthGuard } from "@/components/auth-guard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -17,6 +18,9 @@ import {
   XCircle,
   LogOut,
   Gauge,
+  Bot,
+  GitBranch,
+  Award,
 } from "lucide-react";
 import { useProfesor } from "./hooks/useProfesor";
 import { ProjectSelector } from "./components/ProjectSelector";
@@ -43,8 +47,10 @@ export default function ProfesorDashboard() {
     motivo,
     setMotivo,
     isAnalyzing,
+    analysisMessage,
     loadingAprobar,
     loadingRechazar,
+    isArchiving,
     hitoStates,
     editingTareasEstado,
     editingTareasComentarios,
@@ -62,12 +68,19 @@ export default function ProfesorDashboard() {
     handleReAnalizar,
     handleAprobar,
     handleRechazar,
+    handleDescargarPDF,
+    handleExportarJSON,
+    handleArchivarCiclo,
     setHitoField,
     handleToggleTaskStatus,
     handleTaskCommentChange,
     handleGuardarRevisionHito,
     handleGuardarAuditBacklog,
     getCommitChartData,
+    showConfirmReset,
+    setShowConfirmReset,
+    toast,
+    setToast,
   } = useProfesor();
 
   const [activeTab, setActiveTab] = useState<"hitos" | "backlog" | "commits" | "auditoria">("hitos");
@@ -93,6 +106,7 @@ export default function ProfesorDashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <button
                 onClick={async () => {
                   try {
@@ -236,7 +250,12 @@ export default function ProfesorDashboard() {
                             <ProfesorMetrics
                               detalle={detalle}
                               isAnalyzing={isAnalyzing}
+                              analysisMessage={analysisMessage}
                               handleReAnalizar={handleReAnalizar}
+                              handleDescargarPDF={handleDescargarPDF}
+                              handleExportarJSON={handleExportarJSON}
+                              onOpenResetConfirm={() => setShowConfirmReset(true)}
+                              isArchiving={isArchiving}
                             />
                           </div>
 
@@ -351,6 +370,224 @@ export default function ProfesorDashboard() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Modal de Carga de Análisis de IA */}
+      {isAnalyzing && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 border border-slate-200/85 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center relative overflow-hidden"
+          >
+            {/* Soft decorative background glows inside modal */}
+            <div className="absolute top-[-40%] left-[-40%] w-[80%] h-[80%] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-[-40%] right-[-40%] w-[80%] h-[80%] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header / Radar Animation */}
+            <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-100 dark:border-indigo-950 animate-ping opacity-45" />
+              <div className="absolute inset-2 rounded-full border-4 border-indigo-200 dark:border-indigo-900 animate-pulse" />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none z-10 animate-bounce">
+                <Bot className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            {/* Status title */}
+            <div className="space-y-2">
+              <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100">
+                Ejecutando Agentes de IA
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                Auditoría en tiempo real para el proyecto
+              </p>
+                   {/* Diagrama de Flujo de Agentes Animado */}
+            <div className="relative py-8 flex items-center justify-between max-w-[280px] mx-auto z-10 select-none">
+              {/* Línea de conexión de fondo */}
+              <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-slate-100 dark:bg-slate-800 -translate-y-1/2 z-0" />
+              
+              {/* Línea de progreso brillante animada */}
+              <motion.div 
+                className="absolute top-1/2 left-4 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 -translate-y-1/2 z-0"
+                initial={{ width: "0%" }}
+                animate={{ 
+                  width: 
+                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando") ? "33%" :
+                    analysisMessage.includes("evidencias") || analysisMessage.includes("competencias") ? "66%" : "100%"
+                }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
+              />
+
+              {/* Glowing data packet particle flowing between active nodes */}
+              <motion.div
+                className="absolute w-3.5 h-3.5 rounded-full bg-indigo-500 blur-[1px] shadow-[0_0_12px_#6366f1] z-10"
+                animate={{
+                  x: 
+                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando")
+                      ? [4, 86, 4]
+                      : analysisMessage.includes("evidencias") || analysisMessage.includes("competencias")
+                      ? [86, 172, 86]
+                      : [172, 246, 172]
+                }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                style={{ top: "calc(50% - 7px)" }}
+              />
+
+              {/* Node 1: DevOps */}
+              <div className="relative z-10 flex flex-col items-center gap-1.5">
+                <motion.div 
+                  animate={
+                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando") 
+                      ? { scale: [1, 1.12, 1] } 
+                      : {}
+                  }
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center border-2 transition-all ${
+                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando")
+                      ? "bg-indigo-500 border-indigo-400 text-white shadow-lg shadow-indigo-200 dark:shadow-none"
+                      : analysisMessage.includes("evidencias") || analysisMessage.includes("competencias") || analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
+                      ? "bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-100 dark:shadow-none"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600"
+                  }`}
+                  title="AG-001 DevOps"
+                >
+                  {analysisMessage.includes("evidencias") || analysisMessage.includes("competencias") || analysisMessage.includes("métricas") || analysisMessage.includes("riesgo") ? (
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                  ) : (
+                    <GitBranch className="w-5 h-5" />
+                  )}
+                </motion.div>
+                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">AG-001 (DevOps)</span>
+              </div>
+
+              {/* Node 2: Competency */}
+              <div className="relative z-10 flex flex-col items-center gap-1.5">
+                <motion.div 
+                  animate={
+                    analysisMessage.includes("evidencias") || analysisMessage.includes("competencias")
+                      ? { scale: [1, 1.12, 1] } 
+                      : {}
+                  }
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center border-2 transition-all ${
+                    analysisMessage.includes("evidencias") || analysisMessage.includes("competencias")
+                      ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-200 dark:shadow-none"
+                      : analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
+                      ? "bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-100 dark:shadow-none"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600"
+                  }`}
+                  title="AG-002 Competency"
+                >
+                  {analysisMessage.includes("métricas") || analysisMessage.includes("riesgo") ? (
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                  ) : (
+                    <Award className="w-5 h-5" />
+                  )}
+                </motion.div>
+                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">AG-002 (Comp)</span>
+              </div>
+
+              {/* Node 3: Analyst */}
+              <div className="relative z-10 flex flex-col items-center gap-1.5">
+                <motion.div 
+                  animate={
+                    analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
+                      ? { scale: [1, 1.12, 1] } 
+                      : {}
+                  }
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center border-2 transition-all ${
+                    analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
+                      ? "bg-pink-500 border-pink-400 text-white shadow-lg shadow-pink-200 dark:shadow-none"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600"
+                  }`}
+                  title="AG-003 Analyst"
+                >
+                  <Shield className="w-5 h-5" />
+                </motion.div>
+                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">AG-003 (Analyst)</span>
+              </div>
+            </div>            </div>
+
+            {/* Live Progress Message Box */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-150 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-indigo-500 animate-spin flex-shrink-0" />
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-bold text-left">
+                {analysisMessage || "Ejecutando..."}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      {/* Modal de Confirmación de Reinicio de Ciclo */}
+      {showConfirmReset && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 border border-slate-200/85 dark:border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6 relative overflow-hidden text-center"
+          >
+            {/* Warning Icon */}
+            <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/40 flex items-center justify-center mx-auto border border-red-100 dark:border-red-900 animate-bounce">
+              <AlertCircle className="w-6 h-6 text-red-500" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                ¿Reiniciar Ciclo Académico?
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-normal">
+                Esta acción es irreversible. Se eliminará el historial de chat con la IA, las evidencias asociadas al ciclo y se restablecerán todos los hitos del proyecto a pendientes.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setShowConfirmReset(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-450 text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleArchivarCiclo}
+                disabled={isArchiving}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-500 hover:bg-red-650 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1 cursor-pointer border-none"
+              >
+                {isArchiving ? "Reiniciando..." : "Confirmar Reinicio"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Toast de Notificación Comercial */}
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          className="fixed top-6 right-6 z-50 max-w-sm w-full backdrop-blur-md rounded-2xl p-4 shadow-xl border flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 border-slate-200/60 dark:border-slate-850"
+        >
+          {toast.type === "success" && (
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+          )}
+          {toast.type === "error" && (
+            <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+          )}
+          {toast.type === "info" && (
+            <AlertCircle className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+          )}
+          <p className="text-xs text-slate-750 dark:text-slate-350 font-bold flex-1 leading-normal text-left">
+            {toast.message}
+          </p>
+          <button
+            onClick={() => setToast(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-250 text-xs font-black cursor-pointer border-none bg-transparent"
+          >
+            ✕
+          </button>
+        </motion.div>
+      )}
     </AuthGuard>
   );
 }

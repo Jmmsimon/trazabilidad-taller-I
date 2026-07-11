@@ -108,6 +108,11 @@ export interface TrackingData {
   reporte_competencias: ReporteCompetencias | null;
   estado_repo: EstadoRepo | null;
   evidencias: unknown[];
+  tracking_history?: Array<{
+    fecha: string;
+    score_integridad: number;
+    porcentaje_competencias: number;
+  }>;
 }
 
 export interface TrackingState {

@@ -22,3 +22,149 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* MODO OSCURO GLOBAL (FÁCIL Y SEGURO) */
+html.dark, :root.dark, .dark {
+  --background: #090d16 !important;
+  --foreground: #f8fafc !important;
+}
+
+.dark body, body.dark, .dark {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+.dark .bg-white, 
+.dark .bg-white\/70,
+.dark .bg-white\/80 {
+  background-color: #111827 !important; /* Gray 900 */
+  color: #f3f4f6 !important;
+}
+
+.dark .border-slate-200, 
+.dark .border-slate-250,
+.dark .border-slate-200\/60,
+.dark .border-slate-200\/80, 
+.dark .border-slate-100,
+.dark .border-slate-150 {
+  border-color: #1f2937 !important; /* Gray 800 */
+}
+
+.dark .text-slate-800, 
+.dark .text-slate-700, 
+.dark .text-slate-900,
+.dark h1, .dark h2, .dark h3, .dark h4 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-slate-650,
+.dark .text-slate-600, 
+.dark .text-slate-500,
+.dark .text-slate-550 {
+  color: #9ca3af !important; /* Gray 400 */
+}
+
+.dark .bg-slate-50, 
+.dark .bg-slate-50\/50, 
+.dark .bg-slate-50\/20,
+.dark .bg-slate-50\/40,
+.dark .bg-slate-100,
+.dark .bg-slate-105,
+.dark .bg-slate-100\/80 {
+  background-color: #030712 !important; /* Gray 950 */
+}
+
+.dark .text-slate-400,
+.dark .text-slate-450 {
+  color: #6b7280 !important; /* Gray 500 */
+}
+
+.dark input, 
+.dark select, 
+.dark textarea {
+  background-color: #030712 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+.dark input::placeholder {
+  color: #4b5563 !important;
+}
+
+.dark .shadow-sm, .dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .bg-indigo-50,
+.dark .bg-indigo-50\/25,
+.dark .bg-indigo-50\/30 {
+  background-color: #1e1b4b !important; /* Indigo 950 */
+  color: #e0e7ff !important;
+}
+
+.dark .text-indigo-650,
+.dark .text-indigo-600,
+.dark .text-indigo-750 {
+  color: #818cf8 !important; /* Indigo 400 */
+}
+
+.dark .bg-emerald-50,
+.dark .bg-emerald-50\/20,
+.dark .bg-emerald-50\/30,
+.dark .bg-emerald-50\/50 {
+  background-color: #064e3b !important; /* Emerald 950 */
+  color: #d1fae5 !important;
+}
+
+.dark .text-emerald-600,
+.dark .text-emerald-700 {
+  color: #34d399 !important; /* Emerald 400 */
+}
+
+.dark .bg-red-50,
+.dark .bg-red-50\/50 {
+  background-color: #7f1d1d !important; /* Red 950 */
+  color: #fee2e2 !important;
+}
+
+.dark .text-red-650,
+.dark .text-red-700,
+.dark .text-red-600 {
+  color: #f87171 !important; /* Red 400 */
+}
+
+/* Correcciones de visibilidad para Alertas DevOps en modo oscuro */
+.dark .alert-critica {
+  background-color: #7f1d1d !important; /* Red 950 */
+  color: #fee2e2 !important; /* Red 100 */
+  border-color: #991b1b !important;
+}
+
+.dark .alert-alta {
+  background-color: #431407 !important; /* Orange 950 */
+  color: #ffedd5 !important; /* Orange 100 */
+  border-color: #7c2d12 !important;
+}
+
+.dark .alert-media {
+  background-color: #451a03 !important; /* Amber 950 */
+  color: #fef3c7 !important; /* Amber 100 */
+  border-color: #78350f !important;
+}
+
+.dark .alert-baja {
+  background-color: #172554 !important; /* Blue 950 */
+  color: #dbeafe !important; /* Blue 100 */
+  border-color: #1e40af !important;
+}
+
+.dark .text-orange-850 {
+  color: #fdba74 !important; /* Orange 300 */
+}
+
+.dark .text-amber-850 {
+  color: #fcd34d !important; /* Amber 300 */
+}
+
+
+

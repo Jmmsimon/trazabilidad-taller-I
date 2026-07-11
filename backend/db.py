@@ -49,6 +49,15 @@ def obtener_historial_chat(proyecto_id: str) -> List[Dict[str, Any]]:
     return [{"id": m.id, **m.to_dict()} for m in msgs]
 
 
+def eliminar_chat_proyecto(proyecto_id: str) -> None:
+    """Elimina todos los mensajes de la subcolección chat de un proyecto."""
+    chat_ref = db.collection(COLLECTION).document(proyecto_id).collection("chat")
+    docs = list(chat_ref.limit(100).stream())
+    for doc in docs:
+        doc.reference.delete()
+
+
+
 # ── Usuarios ─────────────────────────────────────────────
 
 def crear_usuario(uid: str, data: Dict[str, Any]) -> None:
@@ -67,6 +76,19 @@ def obtener_proyecto_por_alumno(alumno_id: str) -> Optional[Dict[str, Any]]:
     docs = db.collection(COLLECTION).where("alumnoId", "==", alumno_id).limit(1).stream()
     for doc in docs:
         return {"proyectoId": doc.id, **doc.to_dict()}
+    return None
+
+
+def obtener_proyecto_por_repo(repo_url: str) -> Optional[Dict[str, Any]]:
+    """Busca el proyecto asociado a un repositorio de GitHub."""
+    if not repo_url:
+        return None
+    cleaned = repo_url.strip().rstrip("/")
+    # Buscar con y sin barra final para tolerancia
+    for url in [cleaned, cleaned + "/"]:
+        docs = db.collection(COLLECTION).where("repo_url", "==", url).limit(1).stream()
+        for doc in docs:
+            return {"proyectoId": doc.id, **doc.to_dict()}
     return None
 
 

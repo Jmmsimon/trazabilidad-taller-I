@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Users, BookOpen, AlertCircle, RefreshCw, Trophy } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ProyectoResumen, FilterStatus, STATUS_CONFIG } from "../types";
 
 interface ProjectSelectorProps {
@@ -20,6 +21,7 @@ export function ProjectSelector({
   onSelectProject,
 }: ProjectSelectorProps) {
   const [filtro, setFiltro] = useState<FilterStatus>("todos");
+  const [showChart, setShowChart] = useState(false);
 
   const filtrados =
     filtro === "todos"
@@ -88,6 +90,76 @@ export function ProjectSelector({
           </button>
         ))}
       </div>
+
+      {/* Comparativo del Curso (Gráfico y Leaderboard) */}
+      {proyectos.length > 0 && (
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+          <button
+            onClick={() => setShowChart(!showChart)}
+            className="flex items-center justify-between w-full text-slate-700 hover:text-indigo-650 transition-colors font-bold text-sm cursor-pointer border-none bg-transparent"
+          >
+            <span className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              Comparativo del Curso: Ranking de Integridad y Competencias
+            </span>
+            <span className="text-xs text-indigo-650 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100 font-bold">
+              {showChart ? "Ocultar panel" : "Ver ranking"}
+            </span>
+          </button>
+
+          {showChart && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-slate-100">
+              {/* Gráfico BarChart */}
+              <div className="lg:col-span-2 h-[260px] w-full flex flex-col items-center">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 self-start">Score de Integridad por Proyecto</h4>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={proyectos.map(p => ({ name: p.nombre.slice(0, 15), "Integridad": p.score_integridad, "Competencias": p.porcentaje_competencias }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={9} />
+                    <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
+                    <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
+                    <Bar dataKey="Integridad" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Competencias" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Tabla de Líderes / Leaderboard */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tabla de Desempeño</h4>
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {[...proyectos]
+                    .sort((a, b) => b.score_integridad - a.score_integridad)
+                    .map((proyecto, idx) => (
+                      <div
+                        key={proyecto.proyectoId}
+                        onClick={() => onSelectProject(proyecto.proyectoId)}
+                        className="flex items-center justify-between p-2 rounded-xl bg-slate-50/50 hover:bg-indigo-50/40 border border-slate-200/50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
+                            idx === 0 ? "bg-amber-100 text-amber-700 border border-amber-200" :
+                            idx === 1 ? "bg-slate-200 text-slate-700 border border-slate-300" :
+                            idx === 2 ? "bg-orange-100 text-orange-700 border border-orange-200" :
+                            "bg-slate-100 text-slate-500"
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-bold text-slate-700 truncate max-w-[130px]">{proyecto.nombre}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-black ${scoreColor(proyecto.score_integridad)}`}>
+                            {proyecto.score_integridad}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Contenido */}
       {error ? (

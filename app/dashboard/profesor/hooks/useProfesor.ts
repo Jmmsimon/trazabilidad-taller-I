@@ -23,8 +23,12 @@ export function useProfesor() {
   const [comentario, setComentario] = useState("");
   const [motivo, setMotivo] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisMessage, setAnalysisMessage] = useState("");
+  const [showConfirmReset, setShowConfirmReset] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [loadingAprobar, setLoadingAprobar] = useState(false);
   const [loadingRechazar, setLoadingRechazar] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   // Hitos states
   const [hitoStates, setHitoStates] = useState<
@@ -113,10 +117,54 @@ export function useProfesor() {
     if (selectedId) fetchDetalle(selectedId);
   };
 
+  const pollTracking = useCallback(async (projId: string) => {
+    let secondsElapsed = 0;
+    const messages = [
+      "Iniciando análisis asíncrono...",
+      "Leyendo repositorio Git y commits...",
+      "Extrayendo evidencias y entregables...",
+      "Evaluando competencias adquiridas...",
+      "Calculando métricas de integridad...",
+      "Generando diagnósticos de riesgo de IA..."
+    ];
+
+    const check = async () => {
+      try {
+        const msgIdx = Math.min(Math.floor(secondsElapsed / 3.5), messages.length - 1);
+        setAnalysisMessage(messages[msgIdx]);
+        secondsElapsed += 2.5;
+
+        const res = await fetch(`/api/proyectos/${projId}/tracking/status`);
+        if (!res.ok) {
+          setIsAnalyzing(false);
+          setAnalysisMessage("");
+          return;
+        }
+        const data = await res.json();
+        if (data.tracking_status === "completed") {
+          if (selectedId) fetchDetalle(selectedId);
+          setIsAnalyzing(false);
+          setAnalysisMessage("");
+          return;
+        } else if (data.tracking_status === "error") {
+          setIsAnalyzing(false);
+          setAnalysisMessage("");
+          return;
+        }
+        setTimeout(check, 2500);
+      } catch {
+        setIsAnalyzing(false);
+        setAnalysisMessage("");
+      }
+    };
+    check();
+  }, [selectedId, fetchDetalle]);
+
   // Re-analizar DevOps
   const handleReAnalizar = async () => {
     if (!detalle) return;
     setIsAnalyzing(true);
+    setAnalysisMessage("Iniciando análisis asíncrono...");
     try {
       await fetch(`/api/proyectos/${detalle.proyectoId}/tracking/iniciar`, {
         method: "POST",
@@ -126,13 +174,11 @@ export function useProfesor() {
           proyectoId: detalle.proyectoId,
         }),
       });
-      // The polling in useEffect will update the UI when the agent finishes
-      setTimeout(() => {
-        setIsAnalyzing(false);
-      }, 3000);
+      pollTracking(detalle.proyectoId);
     } catch (e) {
       console.error("Error al iniciar análisis:", e);
       setIsAnalyzing(false);
+      setAnalysisMessage("");
     }
   };
 
@@ -168,6 +214,45 @@ export function useProfesor() {
       console.error("Error al rechazar:", e);
     } finally {
       setLoadingRechazar(false);
+    }
+  };
+
+  const handleDescargarPDF = () => {
+    if (!detalle) return;
+    window.open(`/api/proyectos/${detalle.proyectoId}/reporte-pdf`, "_blank");
+  };
+
+  const handleExportarJSON = () => {
+    if (!detalle) return;
+    window.open(`/api/proyectos/${detalle.proyectoId}/exportar`, "_blank");
+  };
+
+  const showToast = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  }, []);
+
+  const handleArchivarCiclo = async () => {
+    if (!detalle) return;
+    setIsArchiving(true);
+    try {
+      const res = await fetch(`/api/proyectos/${detalle.proyectoId}/archivar`, {
+        method: "POST"
+      });
+      if (res.ok) {
+        showToast("Ciclo reiniciado exitosamente.", "success");
+        handleRefetchDetalle();
+      } else {
+        showToast("Error al archivar el ciclo.", "error");
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Error de conexión al archivar el ciclo.", "error");
+    } finally {
+      setIsArchiving(false);
+      setShowConfirmReset(false);
     }
   };
 
@@ -303,8 +388,10 @@ export function useProfesor() {
     motivo,
     setMotivo,
     isAnalyzing,
+    analysisMessage,
     loadingAprobar,
     loadingRechazar,
+    isArchiving,
     hitoStates,
     editingTareasEstado,
     editingTareasComentarios,
@@ -322,11 +409,19 @@ export function useProfesor() {
     handleReAnalizar,
     handleAprobar,
     handleRechazar,
+    handleDescargarPDF,
+    handleExportarJSON,
+    handleArchivarCiclo,
     setHitoField,
     handleToggleTaskStatus,
     handleTaskCommentChange,
     handleGuardarRevisionHito,
     handleGuardarAuditBacklog,
     getCommitChartData,
+    showConfirmReset,
+    setShowConfirmReset,
+    toast,
+    setToast,
+    showToast,
   };
 }

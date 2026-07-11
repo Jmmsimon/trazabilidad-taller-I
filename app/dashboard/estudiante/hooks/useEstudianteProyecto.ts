@@ -117,7 +117,10 @@ export function useEstudianteProyecto(user: any) {
             if (data.tracking) {
               setTracking({
                 status: data.tracking_status || "completed",
-                data: data.tracking,
+                data: {
+                  ...data.tracking,
+                  tracking_history: data.tracking_history || []
+                },
               });
             }
           }
@@ -368,6 +371,11 @@ export function useEstudianteProyecto(user: any) {
     return Math.min(Math.round((evidenciasSubidas / (totalHitos * 2)) * 100), 100);
   };
 
+  const handleDescargarPDF = () => {
+    if (!projectId) return;
+    window.open(`/api/proyectos/${projectId}/reporte-pdf`, "_blank");
+  };
+
   return {
     phase,
     setPhase,
@@ -410,5 +418,6 @@ export function useEstudianteProyecto(user: any) {
     addTag,
     removeTag,
     calcularProgreso,
+    handleDescargarPDF,
   };
 }

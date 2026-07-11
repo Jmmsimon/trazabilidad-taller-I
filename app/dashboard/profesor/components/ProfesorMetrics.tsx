@@ -1,14 +1,28 @@
 "use client";
-import { Shield, AlertCircle, CheckCircle2, GitCommit, Rocket } from "lucide-react";
+import { Shield, AlertCircle, CheckCircle2, GitCommit, Rocket, FileDown, Download, RotateCcw, RefreshCw } from "lucide-react";
 import { ProyectoDetalle, SEVERIDAD_COLORS } from "../types";
 
 interface ProfesorMetricsProps {
   detalle: ProyectoDetalle;
   isAnalyzing: boolean;
+  analysisMessage?: string;
   handleReAnalizar: () => void;
+  handleDescargarPDF: () => void;
+  handleExportarJSON: () => void;
+  onOpenResetConfirm: () => void;
+  isArchiving: boolean;
 }
 
-export function ProfesorMetrics({ detalle, isAnalyzing, handleReAnalizar }: ProfesorMetricsProps) {
+export function ProfesorMetrics({
+  detalle,
+  isAnalyzing,
+  analysisMessage,
+  handleReAnalizar,
+  handleDescargarPDF,
+  handleExportarJSON,
+  onOpenResetConfirm,
+  isArchiving
+}: ProfesorMetricsProps) {
   const tracking = detalle.tracking;
   const alertas = tracking?.alertas ?? [];
 
@@ -91,13 +105,46 @@ export function ProfesorMetrics({ detalle, isAnalyzing, handleReAnalizar }: Prof
           <p className="text-xs text-slate-400 text-center py-2 italic">Sin datos de tracking.</p>
         )}
 
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-4 space-y-2">
+          {isAnalyzing && (
+            <div className="p-3 rounded-xl bg-indigo-50/40 border border-indigo-100 flex items-center gap-3 animate-pulse mb-2">
+              <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-extrabold text-indigo-650 uppercase tracking-wider leading-none mb-1">Analizando Proyecto...</p>
+                <p className="text-xs text-slate-500 font-bold truncate leading-tight">{analysisMessage || "Iniciando..."}</p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleReAnalizar}
             disabled={isAnalyzing}
-            className="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
           >
-            {isAnalyzing ? "Analizando repositorio..." : "Iniciar Análisis Trazabilidad"}
+            {isAnalyzing ? "Ejecutando Auditoría..." : "Iniciar Análisis Trazabilidad"}
+          </button>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleDescargarPDF}
+              className="py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-indigo-500" /> Reporte PDF
+            </button>
+            <button
+              onClick={handleExportarJSON}
+              className="py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-500" /> Exportar JSON
+            </button>
+          </div>
+
+          <button
+            onClick={onOpenResetConfirm}
+            disabled={isArchiving}
+            className="w-full py-2 px-4 rounded-xl bg-red-50 hover:bg-red-100 border border-red-150 text-red-650 text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> {isArchiving ? "Reiniciando..." : "Reiniciar Ciclo Académico"}
           </button>
         </div>
       </div>
@@ -123,11 +170,21 @@ export function ProfesorMetrics({ detalle, isAnalyzing, handleReAnalizar }: Prof
                   ? "bg-amber-50 border-amber-200 text-amber-850"
                   : "bg-blue-50 border-blue-200 text-blue-800";
 
+              const formatAlertaTipo = (tipo: string) => {
+                const map: Record<string, string> = {
+                  demo_caida: "DESPLIEGUE INACTIVO",
+                  tarea_sin_evidencia: "TAREA SIN RESPALDO",
+                  pipeline_roto: "PIPELINE CAÍDO",
+                  commit_inactivo: "INACTIVIDAD EN GIT",
+                };
+                return map[tipo] || tipo.replace(/_/g, " ").toUpperCase();
+              };
+
               return (
-                <div key={i} className={`rounded-xl border p-3.5 transition-all text-xs ${severityCls}`}>
+                <div key={i} className={`rounded-xl border p-3.5 transition-all text-xs alert-${alerta.severidad.toLowerCase()} ${severityCls}`}>
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="text-[9px] font-extrabold uppercase tracking-wider">
-                      {alerta.tipo.replace(/_/g, " ")}
+                      {formatAlertaTipo(alerta.tipo)}
                     </span>
                     <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-white/60 border border-black/5">
                       {alerta.severidad}
