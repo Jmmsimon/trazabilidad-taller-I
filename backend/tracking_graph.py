@@ -443,7 +443,19 @@ async def analyst_node(state: TrackingState) -> Dict:
     response = await ask_claude(ANALYST_SYSTEM_PROMPT, user_prompt)
     data = clean_json_response(response)
 
-    score = float(data.get("score_integridad", 100.0))
+    score = float(data.get("score_integridad", 0.0))
+
+    # Clamp de seguridad: si no hay repo, no hay commits y no hay demo,
+    # el score DEBE ser 0.0 independientemente de lo que devolvió el LLM.
+    repo_info = state.estado_repo
+    sin_repo = not (repo_info and repo_info.repo_url)
+    sin_commits = not (repo_info and repo_info.commits)
+    sin_demo = not (repo_info and repo_info.demo_url)
+    if sin_repo and sin_commits and sin_demo:
+        score = 0.0
+
+    # Asegurar rango válido [0, 100]
+    score = max(0.0, min(100.0, score))
 
     allowed_tipos = {"tarea_sin_evidencia", "pipeline_roto", "demo_caida", "commit_inactivo"}
     allowed_severidades = {"baja", "media", "alta", "critica"}

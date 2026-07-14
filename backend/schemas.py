@@ -107,7 +107,7 @@ class TrackingState(BaseModel):
     evidencias: List[Evidencia] = Field(default_factory=list)
     reporte_competencias: Optional[ReporteCompetencias] = None
     alertas: List[AlertaDesvio] = Field(default_factory=list)
-    score_integridad: float = 100.0
+    score_integridad: float = 0.0
     diagnostico_riesgo: str = ""
     resumen_ejecutivo: str = ""
     ciclo_activo: bool = True

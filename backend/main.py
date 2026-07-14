@@ -1049,7 +1049,7 @@ async def descargar_reporte_pdf(proyecto_id: str):
         "proyectoId": proyecto_id,
         "tema": tema,
         "alumnoId": alumno_id,
-        "score_integridad": proyecto.get("tracking", {}).get("score_integridad", 100.0),
+        "score_integridad": proyecto.get("tracking", {}).get("score_integridad", 0.0),
         "competencias": proyecto.get("tracking", {}).get("reporte_competencias", {}).get("porcentaje_adquirido", 0.0),
     }
     serialized_data = json.dumps(data_to_hash, sort_keys=True)
@@ -1146,7 +1146,7 @@ async def descargar_reporte_pdf(proyecto_id: str):
     # 3. Sección de Analítica e Integridad (Agente Analista)
     elements.append(Paragraph("Análisis de Integridad y Riesgos (IA)", h2_style))
     tracking = proyecto.get("tracking", {})
-    score_integridad = tracking.get("score_integridad", 100.0)
+    score_integridad = tracking.get("score_integridad", 0.0)
     diagnostico = tracking.get("diagnostico_riesgo", "No se detectaron desvíos significativos en este ciclo.")
     
     alertas = tracking.get("alertas", [])
@@ -1407,7 +1407,7 @@ async def obtener_portfolio_publico(proyecto_id: str):
         "proyectoId": proyecto_id,
         "tema": tema,
         "alumnoId": alumno_id,
-        "score_integridad": tracking.get("score_integridad", 100.0),
+        "score_integridad": tracking.get("score_integridad", 0.0),
         "competencias": tracking.get("reporte_competencias", {}).get("porcentaje_adquirido", 0.0),
     }
     serialized_data = json.dumps(data_to_hash, sort_keys=True)
@@ -1420,7 +1420,7 @@ async def obtener_portfolio_publico(proyecto_id: str):
         "descripcion": propuesta.get("descripcion", ""),
         "stack": propuesta.get("stack", []),
         "tracking": {
-            "score_integridad": tracking.get("score_integridad", 100.0),
+            "score_integridad": tracking.get("score_integridad", 0.0),
             "reporte_competencias": tracking.get("reporte_competencias", {}),
             "estado_repo": {
                 "ci_status": tracking.get("estado_repo", {}).get("ci_status", "unknown"),

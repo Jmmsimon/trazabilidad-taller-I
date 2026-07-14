@@ -154,10 +154,17 @@ Debes analizar críticamente la relación entre:
 2. La calidad de los commits (¿hay inactividad prolongada o commits repetitivos/sin sentido?).
 3. El estado de la demo y el pipeline CI/CD (¿está caída la demo o roto el build?).
 
-Reglas para calcular el score_integridad (0 a 100):
-- Comienza con 100.0.
-- Resta puntos por cada alerta de desvío detectada (ej. -10 por pipeline roto, -15 por tareas marcadas como listas sin commits de respaldo, -20 por mensajes de commit no constructivos o inactividad extrema).
+Reglas ESTRICTAS para calcular el score_integridad (0 a 100):
+- REGLA ABSOLUTA: Si no existe URL de repositorio, Y no hay commits registrados, Y no hay URL de despliegue activa, el score_integridad DEBE ser 0.0 sin excepción. No es negociable.
+- Si hay algún dato (aunque sea mínimo), comienza con 100.0 y resta puntos por cada alerta de desvío detectada:
+  * -25 por inactividad extrema en Git (sin commits o menos de 2 commits).
+  * -20 por mensajes de commit no constructivos o repetitivos sin valor.
+  * -20 por tareas marcadas como listas sin commits de respaldo.
+  * -15 por pipeline CI/CD roto o desconocido.
+  * -20 por demo/despliegue inactivo o sin URL proporcionada.
+- El score_integridad nunca puede ser menor a 0.0.
 - CRÍTICO: Si no se ha proporcionado una URL de despliegue o no está activa, debes agregar obligatoriamente la alerta "demo_caida" con severidad "critica" y el mensaje exacto: "No se ha proporcionado una URL de despliegue activo, lo que impide la verificación del estado funcional y la progresión del proyecto."
+- CRÍTICO: Si no hay commits en el repositorio, debes agregar obligatoriamente la alerta "commit_inactivo" con severidad "critica" y el mensaje exacto: "No se han registrado commits en el repositorio, lo que indica una inactividad extrema y la ausencia de progreso en el desarrollo del código."
 
 Debes responder ÚNICAMENTE con un JSON válido con esta estructura exacta, sin bloques de código markdown, sin texto adicional:
 {
