@@ -783,16 +783,21 @@ async def actualizar_borrador_proyecto(proyecto_id: str, req: UpdateDraftRequest
         
         updates = {}
         if req.hitos is not None:
-            updates["propuesta.hitos"] = [h.model_dump() for h in req.hitos]
+            # Serializamos la lista de hitos a diccionarios simples compatibles con firestore
+            updates["propuesta.hitos"] = [json.loads(h.model_dump_json()) for h in req.hitos]
         if req.backlog_scrum is not None:
-            updates["backlog_scrum"] = req.backlog_scrum.model_dump()
+            # Serializamos backlog_scrum a diccionarios simples compatibles con firestore
+            updates["backlog_scrum"] = json.loads(req.backlog_scrum.model_dump_json())
             
         if updates:
+            print(f"[DRAFT] Actualizando borrador para {proyecto_id} con llaves: {list(updates.keys())}")
             actualizar_proyecto(proyecto_id, updates)
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al actualizar borrador: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al actualizar borrador en BD: {str(e)}")
     return {"ok": True}
 
 
