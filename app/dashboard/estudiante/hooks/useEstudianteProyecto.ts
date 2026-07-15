@@ -174,7 +174,21 @@ export function useEstudianteProyecto(user: any) {
       const res = await fetch(`/api/proyectos/${projectId}/tracking/status`);
       const data = await res.json();
       if (data.tracking_status === "completed" && data.tracking) {
-        setTracking({ status: "completed", data: data.tracking });
+        setTracking({
+          status: "completed",
+          data: data.tracking,
+          activeAgent: undefined,
+          progress: 100,
+          detail: undefined
+        });
+      } else if (data.tracking_status === "processing") {
+        setTracking((prev) => ({
+          ...prev,
+          status: "processing",
+          activeAgent: data.tracking_active_agent,
+          progress: data.tracking_progress,
+          detail: data.tracking_detail
+        }));
       } else if (data.tracking_status === "error") {
         setTracking((prev) => ({ ...prev, status: "error" }));
       }

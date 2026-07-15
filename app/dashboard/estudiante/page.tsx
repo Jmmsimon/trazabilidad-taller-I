@@ -840,6 +840,108 @@ export default function EstudianteDashboard() {
                 animate={{ opacity: 1 }}
                 className="space-y-8 animate-fadeIn mx-auto w-full"
               >
+            {/* ── FASE D ─────────────────────────────────────────── */}
+            {phase === "D" && plan && (
+              <motion.div
+                key="phaseD"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-8 animate-fadeIn mx-auto w-full"
+              >
+                {/* Modal de Agentes de Tracking en ejecución */}
+                {tracking.status === "processing" && (
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-white border border-slate-200 rounded-3xl p-8 shadow-xl max-w-md w-full text-center space-y-6"
+                    >
+                      {/* Progress Ring */}
+                      <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90">
+                          <circle
+                            cx="56"
+                            cy="56"
+                            r="46"
+                            className="stroke-slate-100 fill-none"
+                            strokeWidth="5"
+                          />
+                          <motion.circle
+                            cx="56"
+                            cy="56"
+                            r="46"
+                            className="stroke-indigo-650 fill-none"
+                            strokeWidth="5"
+                            strokeDasharray={289}
+                            initial={{ strokeDashoffset: 289 }}
+                            animate={{ strokeDashoffset: 289 - (289 * (tracking.progress ?? 0)) / 100 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute text-2xl font-black text-slate-800 font-mono">
+                          {tracking.progress ?? 0}%
+                        </div>
+                      </div>
+
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-800 mb-1">Auditoría de Trazabilidad Activa</h2>
+                        <p className="text-xs text-indigo-700 h-10 flex items-center justify-center font-bold animate-pulse px-4">
+                          {tracking.detail || "Analizando el avance del proyecto..."}
+                        </p>
+                      </div>
+
+                      {/* Agentes List */}
+                      <div className="flex flex-col gap-3 max-w-xs mx-auto text-left pt-2">
+                        {[
+                          { id: "ag_devops", label: "DevOps Auditor (AG-002)", desc: "Validando commits de GitHub y pipeline" },
+                          { id: "ag_comp", label: "Competency Analyzer", desc: "Vinculando commits con habilidades académicas" },
+                          { id: "ag_003_analyst", label: "Integrity Analyst (AG-003)", desc: "Calculando score final y detectando riesgos" },
+                          { id: "ag_004_reporter", label: "Executive Reporter (AG-004)", desc: "Redactando reporte ejecutivo final" }
+                        ].map((ag) => {
+                          const isCompleted = 
+                            ag.id === "ag_devops" && (tracking.activeAgent === "ag_comp" || tracking.activeAgent === "ag_003_analyst" || tracking.activeAgent === "ag_004_reporter") ||
+                            ag.id === "ag_comp" && (tracking.activeAgent === "ag_003_analyst" || tracking.activeAgent === "ag_004_reporter") ||
+                            ag.id === "ag_003_analyst" && (tracking.activeAgent === "ag_004_reporter");
+                          
+                          const isActive = tracking.activeAgent === ag.id;
+
+                          return (
+                            <div
+                              key={ag.id}
+                              className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
+                                isCompleted
+                                  ? "bg-emerald-50 border-emerald-200 text-slate-800"
+                                  : isActive
+                                  ? "bg-indigo-50 border-indigo-200 text-slate-800 ring-2 ring-indigo-500/20 shadow-sm"
+                                  : "bg-slate-50 border-slate-200 text-slate-400"
+                              }`}
+                            >
+                              <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                isCompleted ? "bg-emerald-100 text-emerald-600" :
+                                isActive ? "bg-indigo-100 text-indigo-600" :
+                                "bg-slate-200 text-slate-400"
+                              }`}>
+                                {isCompleted ? (
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                ) : isActive ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Activity className="w-3.5 h-3.5" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-[10px] font-bold">{ag.label}</div>
+                                <div className="text-[8px] opacity-75 truncate">{ag.desc}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+
                 {/* Header Container */}
                 <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-4">
                   <div>

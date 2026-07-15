@@ -118,4 +118,7 @@ export interface TrackingData {
 export interface TrackingState {
   status: "not_started" | "processing" | "completed" | "error";
   data: TrackingData | null;
+  activeAgent?: string;
+  progress?: number;
+  detail?: string;
 }

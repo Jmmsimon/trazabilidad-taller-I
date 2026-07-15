@@ -200,15 +200,89 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
             demo_activa=False
         )
 
+        # Estado inicial para el tracking en Firestore
+        actualizar_proyecto(proyecto_id, {
+            "tracking_status": "processing",
+            "tracking_active_agent": "ag_devops",
+            "tracking_progress": 15,
+            "tracking_detail": "Inspeccionando commits y repositorio en GitHub..."
+        })
+
         initial_state = TrackingState(
             alumno_id=alumno_id,
             propuesta_confirmada=propuesta_confirmada,
             estado_repo=estado_repo,
         )
 
-        graph = build_tracking_graph()
-        result_dict = await graph.ainvoke(initial_state)
-        result = TrackingState(**result_dict)
+        # ── Nodo 1: DevOps ──
+        actualizar_proyecto(proyecto_id, {
+            "tracking_active_agent": "ag_devops",
+            "tracking_progress": 25,
+            "tracking_detail": "Agente DevOps analizando integridad de pipelines y ramas..."
+        })
+        from tracking_graph import devops_node, competency_node, analyst_node, reporter_node
+        
+        devops_res = await devops_node(initial_state)
+        # Mezclamos el estado
+        state_after_devops = TrackingState(
+            alumno_id=alumno_id,
+            propuesta_confirmada=propuesta_confirmada,
+            estado_repo=devops_res["estado_repo"],
+            evidencias=devops_res["evidencias"]
+        )
+
+        # ── Nodo 2: Competencias ──
+        actualizar_proyecto(proyecto_id, {
+            "tracking_active_agent": "ag_comp",
+            "tracking_progress": 50,
+            "tracking_detail": "Agente de Competencias validando commits y asociándolos a hitos académicos..."
+        })
+        comp_res = await competency_node(state_after_devops)
+        state_after_comp = TrackingState(
+            alumno_id=alumno_id,
+            propuesta_confirmada=propuesta_confirmada,
+            estado_repo=state_after_devops.estado_repo,
+            evidencias=state_after_devops.evidencias,
+            reporte_competencias=comp_res["reporte_competencias"]
+        )
+
+        # ── Nodo 3: Analista de Integridad ──
+        actualizar_proyecto(proyecto_id, {
+            "tracking_active_agent": "ag_003_analyst",
+            "tracking_progress": 75,
+            "tracking_detail": "Agente Analista evaluando el score final de integridad y generando alertas de desvío..."
+        })
+        analyst_res = await analyst_node(state_after_comp)
+        state_after_analyst = TrackingState(
+            alumno_id=alumno_id,
+            propuesta_confirmada=propuesta_confirmada,
+            estado_repo=state_after_comp.estado_repo,
+            evidencias=state_after_comp.evidencias,
+            reporte_competencias=state_after_comp.reporte_competencias,
+            score_integridad=analyst_res["score_integridad"],
+            alertas=analyst_res["alertas"],
+            diagnostico_riesgo=analyst_res["diagnostico_riesgo"]
+        )
+
+        # ── Nodo 4: Reportero Final ──
+        actualizar_proyecto(proyecto_id, {
+            "tracking_active_agent": "ag_004_reporter",
+            "tracking_progress": 90,
+            "tracking_detail": "Agente Reportero generando el resumen ejecutivo final y balance del ciclo..."
+        })
+        reporter_res = await reporter_node(state_after_analyst)
+        
+        result = TrackingState(
+            alumno_id=alumno_id,
+            propuesta_confirmada=propuesta_confirmada,
+            estado_repo=state_after_analyst.estado_repo,
+            evidencias=state_after_analyst.evidencias,
+            reporte_competencias=state_after_analyst.reporte_competencias,
+            score_integridad=state_after_analyst.score_integridad,
+            alertas=state_after_analyst.alertas,
+            diagnostico_riesgo=state_after_analyst.diagnostico_riesgo,
+            resumen_ejecutivo=reporter_res["resumen_ejecutivo"]
+        )
 
         # Registrar en el historial de avance temporal
         import datetime
@@ -376,6 +450,9 @@ async def get_tracking_status(proyecto_id: str):
         "proyectoId": proyecto_id,
         "tracking_status": tracking_status,
         "tracking": tracking_data,
+        "tracking_active_agent": project.get("tracking_active_agent", "ag_devops"),
+        "tracking_progress": project.get("tracking_progress", 0),
+        "tracking_detail": project.get("tracking_detail", "Cargando análisis..."),
     }
 
 
