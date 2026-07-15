@@ -95,7 +95,7 @@ export function ProfesorMetrics({
                     rel="noreferrer"
                     className="flex items-center gap-1.5 text-xs text-emerald-650 hover:underline font-semibold"
                   >
-                    <Rocket className="w-3.5 h-3.5" /> Aplicación en Vivo (Demo)
+                    <Rocket className="w-3.5 h-3.5" /> Aplicación en Vivo (Producción)
                   </a>
                 )}
               </div>

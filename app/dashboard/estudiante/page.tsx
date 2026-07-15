@@ -1056,7 +1056,7 @@ export default function EstudianteDashboard() {
                             rel="noreferrer"
                             className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 hover:underline"
                           >
-                            <Rocket className="w-3.5 h-3.5" /> Demo En Vivo
+                            <Rocket className="w-3.5 h-3.5" /> Producción en Vivo
                           </a>
                         )}
                         <button
@@ -1140,11 +1140,11 @@ export default function EstudianteDashboard() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-450 uppercase tracking-wider">Enlace de Producción (Demo)</label>
+                            <label className="text-xs font-bold text-slate-450 uppercase tracking-wider">Enlace de Producción</label>
                             <input
                               value={demoUrl}
                               onChange={(e) => setDemoUrl(e.target.value)}
-                              placeholder="Ej: https://mi-demo.vercel.app"
+                              placeholder="Ej: https://mi-proyecto.vercel.app"
                               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                             />
                           </div>

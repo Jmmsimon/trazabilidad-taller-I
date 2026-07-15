@@ -207,7 +207,7 @@ export default function ProfesorDashboard() {
                               rel="noreferrer"
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-emerald-650 text-xs font-bold transition-all"
                             >
-                              <Rocket className="w-3.5 h-3.5" /> Demo Online
+                              <Rocket className="w-3.5 h-3.5" /> Producción Online
                             </a>
                           )}
                         </div>
