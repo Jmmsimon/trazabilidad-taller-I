@@ -840,14 +840,6 @@ export default function EstudianteDashboard() {
                 animate={{ opacity: 1 }}
                 className="space-y-8 animate-fadeIn mx-auto w-full"
               >
-            {/* ── FASE D ─────────────────────────────────────────── */}
-            {phase === "D" && plan && (
-              <motion.div
-                key="phaseD"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-8 animate-fadeIn mx-auto w-full"
-              >
                 {/* Modal de Agentes de Tracking en ejecución */}
                 {tracking.status === "processing" && (
                   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
