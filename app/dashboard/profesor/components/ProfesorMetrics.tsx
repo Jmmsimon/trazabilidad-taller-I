@@ -172,7 +172,7 @@ export function ProfesorMetrics({
 
               const formatAlertaTipo = (tipo: string) => {
                 const map: Record<string, string> = {
-                  demo_caida: "DESPLIEGUE INACTIVO",
+                  produccion_inactiva: "DESPLIEGUE INACTIVO",
                   tarea_sin_evidencia: "TAREA SIN RESPALDO",
                   pipeline_roto: "PIPELINE CAÍDO",
                   commit_inactivo: "INACTIVIDAD EN GIT",

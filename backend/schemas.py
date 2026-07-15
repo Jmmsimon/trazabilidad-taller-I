@@ -95,7 +95,7 @@ class ReporteCompetencias(BaseModel):
 
 
 class AlertaDesvio(BaseModel):
-    tipo: Literal["tarea_sin_evidencia", "pipeline_roto", "demo_caida", "commit_inactivo"]
+    tipo: Literal["tarea_sin_evidencia", "pipeline_roto", "produccion_inactiva", "commit_inactivo"]
     mensaje: str
     severidad: Literal["baja", "media", "alta", "critica"] = "media"
 

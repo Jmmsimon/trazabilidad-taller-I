@@ -457,7 +457,7 @@ async def analyst_node(state: TrackingState) -> Dict:
     # Asegurar rango válido [0, 100]
     score = max(0.0, min(100.0, score))
 
-    allowed_tipos = {"tarea_sin_evidencia", "pipeline_roto", "demo_caida", "commit_inactivo"}
+    allowed_tipos = {"tarea_sin_evidencia", "pipeline_roto", "produccion_inactiva", "commit_inactivo"}
     allowed_severidades = {"baja", "media", "alta", "critica"}
 
     alertas_raw = data.get("alertas", [])

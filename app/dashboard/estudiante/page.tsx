@@ -974,10 +974,21 @@ export default function EstudianteDashboard() {
                               <AlertCircle className="w-3 h-3 text-current mt-0.5 flex-shrink-0" />
                               <div className="min-w-0 flex-1">
                                 <div className="font-black uppercase tracking-wider text-[8px] flex justify-between mb-0.5">
-                                  <span className="truncate">{alerta.tipo}</span>
+                                  <span className="truncate">
+                                    {(() => {
+                                      const map: Record<string, string> = {
+                                        produccion_inactiva: "DESPLIEGUE INACTIVO",
+                                        demo_caida: "DESPLIEGUE INACTIVO",
+                                        tarea_sin_evidencia: "TAREA SIN RESPALDO",
+                                        pipeline_roto: "PIPELINE CAÍDO",
+                                        commit_inactivo: "INACTIVIDAD EN GIT",
+                                      };
+                                      return map[alerta.tipo] || alerta.tipo.replace(/_/g, " ");
+                                    })()}
+                                  </span>
                                   <span>{alerta.severidad}</span>
                                 </div>
-                                <p className="opacity-85 truncate">{alerta.mensaje}</p>
+                                <p className="opacity-85 truncate" title={alerta.mensaje}>{alerta.mensaje}</p>
                               </div>
                             </div>
                           ))
