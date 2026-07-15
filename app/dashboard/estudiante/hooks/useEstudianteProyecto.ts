@@ -378,11 +378,20 @@ export function useEstudianteProyecto(user: any) {
   const removeTag = (tag: string) => setStack(stack.filter((t) => t !== tag));
 
   const calcularProgreso = (): number => {
-    if (!plan) return 0;
-    const totalHitos = plan.hitos.length;
-    if (totalHitos === 0) return 0;
-    const evidenciasSubidas = tracking.data?.evidencias?.length ?? 0;
-    return Math.min(Math.round((evidenciasSubidas / (totalHitos * 2)) * 100), 100);
+    if (!plan || !plan.backlog_scrum?.epicas) return 0;
+    let total = 0;
+    let completadas = 0;
+    plan.backlog_scrum.epicas.forEach((epica) => {
+      if (epica.tareas) {
+        epica.tareas.forEach((tarea) => {
+          total++;
+          if (tarea.estado === "done") {
+            completadas++;
+          }
+        });
+      }
+    });
+    return total === 0 ? 0 : Math.round((completadas / total) * 100);
   };
 
   const handleDescargarPDF = () => {
