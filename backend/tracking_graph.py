@@ -415,7 +415,8 @@ async def competency_node(state: TrackingState) -> Dict:
 
     return {
         "reporte_competencias": reporte,
-        "estado_repo": estado_repo
+        "estado_repo": estado_repo,
+        "mapeo_tareas": data.get("mapeo_tareas", {})
     }
 
 

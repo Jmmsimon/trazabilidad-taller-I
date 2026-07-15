@@ -300,31 +300,38 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
 
         # ── AUTO-COMPLETAR TAREAS DEL KANBAN/BACKLOG SCRUM BASADO EN COMMITS ──
         backlog_scrum = project.get("backlog_scrum", {})
-        if backlog_scrum and "epicas" in backlog_scrum and result.estado_repo and result.estado_repo.commits:
-            commits = result.estado_repo.commits
+        mapeo_ai = comp_res.get("mapeo_tareas", {}) if "comp_res" in locals() and isinstance(comp_res.get("mapeo_tareas"), dict) else {}
+        
+        if backlog_scrum and "epicas" in backlog_scrum:
             for epica in backlog_scrum["epicas"]:
                 if "items" in epica:
                     for item in epica["items"]:
-                        # Mapear por concordancia de ID de tarea (ej: HU-001) o palabras clave del título en los mensajes de commits
-                        match_id = item.get("id", "").lower()
-                        match_titulo = item.get("titulo", "").lower()
+                        item_id = item.get("id", "")
                         
+                        # 1. Intentar autocompletar por mapeo semántico de la IA primero
+                        if item_id in mapeo_ai:
+                            item["estado"] = mapeo_ai[item_id]
+                            print(f"[AUTO-KANBAN-AI] Tarea {item_id} marcada como {mapeo_ai[item_id]} por análisis semántico de IA.")
+                            continue
+
+                        # 2. Fallback de detección por coincidencia de texto
+                        match_id = item_id.lower()
+                        match_titulo = item.get("titulo", "").lower()
                         rel_commits = []
-                        for c in commits:
-                            msg = c.mensaje.lower()
-                            # Validamos si menciona el ID de la tarea o palabras clave importantes del título
-                            if match_id in msg or (len(match_titulo) > 5 and match_titulo in msg):
-                                rel_commits.append(c)
+                        if result.estado_repo and result.estado_repo.commits:
+                            for c in result.estado_repo.commits:
+                                msg = c.mensaje.lower()
+                                if match_id and match_id in msg or (len(match_titulo) > 5 and match_titulo in msg):
+                                    rel_commits.append(c)
                         
                         if rel_commits:
-                            # Si los commits están alineados y son constructivos, marcamos como done
                             all_alineados = all(getattr(c, "alineado", True) for c in rel_commits)
                             if all_alineados:
                                 item["estado"] = "done"
-                                print(f"[AUTO-KANBAN] Tarea {item.get('id')} marcada como DONE basada en commits.")
+                                print(f"[AUTO-KANBAN-TEXT] Tarea {item_id} marcada como DONE basada en concordancia de texto.")
                             else:
                                 item["estado"] = "in_progress"
-                                print(f"[AUTO-KANBAN] Tarea {item.get('id')} marcada como IN_PROGRESS por commits bajo revisión.")
+                                print(f"[AUTO-KANBAN-TEXT] Tarea {item_id} marcada como IN_PROGRESS por concordancia de texto.")
         
         # Serializar resultados a Firestore
         tracking_data = {

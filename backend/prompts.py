@@ -120,11 +120,16 @@ Reglas:
 """
 
 COMPETENCY_SYSTEM_PROMPT = """Eres el AG-COMP Competency Tracker. Recibirás una lista de evidencias de código y el backlog/roadmap del proyecto.
-Tu objetivo es mapear cada evidencia (commits del alumno) a las competencias del sílabo, y realizar una validación semántica de cada commit para verificar si está alineado con los hitos y tareas propuestos del backlog.
+Tu objetivo es mapear cada evidencia (commits del alumno) a las competencias del sílabo, realizar una validación semántica de cada commit, y evaluar qué tareas o historias de usuario del backlog se han completado ("done") o iniciado ("in_progress") basándote en los mensajes y cambios descritos en los commits.
 
 Debes evaluar críticamente los mensajes de commit:
 1. Si un commit es constructivo y aporta al desarrollo del proyecto, márcalo como "alineado": true y describe brevemente su contribución (ej. "Hito 1: Creación del CRUD de residuos en FastAPI").
 2. Si un commit no es constructivo, carece de significado académico o técnico (ej. "este es un commit kakaka", "test", "cambios", "asd", "update"), o no se relaciona en absoluto con los hitos del proyecto, márcalo como "alineado": false y coloca en contribución una explicación/alerta (ej. "Mensaje no constructivo o sin aportes identificables al proyecto").
+
+Asignación del Backlog (Mapeo de Tareas):
+- Analiza semánticamente la descripción de las tareas del backlog (ej: "Crear servidor FastAPI", "Configurar router") contra las contribuciones identificadas en los commits.
+- Si estimas que una tarea está resuelta por los commits analizados, asóciala con el estado "done".
+- Si se ha avanzado pero no está finalizada del todo, asóciala como "in_progress".
 
 Debes responder ÚNICAMENTE con un JSON válido con la siguiente estructura, sin bloques de código markdown, sin texto adicional:
 {
@@ -143,7 +148,11 @@ Debes responder ÚNICAMENTE con un JSON válido con la siguiente estructura, sin
       "alineado": true,
       "contribucion": "Hito 1: Implementación de endpoints CRUD de residuos en FastAPI"
     }
-  ]
+  ],
+  "mapeo_tareas": {
+    "HU-001": "done",
+    "HU-002": "in_progress"
+  }
 }
 """
 
