@@ -298,6 +298,34 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
             historial = []
         historial.append(nuevo_historico)
 
+        # ── AUTO-COMPLETAR TAREAS DEL KANBAN/BACKLOG SCRUM BASADO EN COMMITS ──
+        backlog_scrum = project.get("backlog_scrum", {})
+        if backlog_scrum and "epicas" in backlog_scrum and result.estado_repo and result.estado_repo.commits:
+            commits = result.estado_repo.commits
+            for epica in backlog_scrum["epicas"]:
+                if "tareas" in epica:
+                    for tarea in epica["tareas"]:
+                        # Mapear por concordancia de ID de tarea (ej: HU-001) o palabras clave del título en los mensajes de commits
+                        match_id = tarea.get("id", "").lower()
+                        match_titulo = tarea.get("titulo", "").lower()
+                        
+                        rel_commits = []
+                        for c in commits:
+                            msg = c.mensaje.lower()
+                            # Validamos si menciona el ID de la tarea o palabras clave importantes del título
+                            if match_id in msg or (len(match_titulo) > 5 and match_titulo in msg):
+                                rel_commits.append(c)
+                        
+                        if rel_commits:
+                            # Si los commits están alineados y son constructivos, marcamos como done
+                            all_alineados = all(getattr(c, "alineado", True) for c in rel_commits)
+                            if all_alineados:
+                                tarea["estado"] = "done"
+                                print(f"[AUTO-KANBAN] Tarea {tarea.get('id')} marcada como DONE basada en commits.")
+                            else:
+                                tarea["estado"] = "in_progress"
+                                print(f"[AUTO-KANBAN] Tarea {tarea.get('id')} marcada como IN_PROGRESS por commits bajo revisión.")
+        
         # Serializar resultados a Firestore
         tracking_data = {
             "score_integridad": result.score_integridad,
@@ -318,7 +346,8 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
             actualizar_proyecto(proyecto_id, {
                 "tracking": tracking_data,
                 "tracking_status": "completed",
-                "tracking_history": historial
+                "tracking_history": historial,
+                "backlog_scrum": backlog_scrum
             })
         except Exception as db_err:
             print(f"[ERROR] Error al guardar tracking en Firestore: {db_err}")
