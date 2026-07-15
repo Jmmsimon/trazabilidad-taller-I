@@ -382,10 +382,10 @@ export function useEstudianteProyecto(user: any) {
     let total = 0;
     let completadas = 0;
     plan.backlog_scrum.epicas.forEach((epica) => {
-      if (epica.tareas) {
-        epica.tareas.forEach((tarea) => {
+      if (epica.items) {
+        epica.items.forEach((item: any) => {
           total++;
-          if (tarea.estado === "done") {
+          if (item.estado === "done") {
             completadas++;
           }
         });

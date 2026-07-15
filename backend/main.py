@@ -303,11 +303,11 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
         if backlog_scrum and "epicas" in backlog_scrum and result.estado_repo and result.estado_repo.commits:
             commits = result.estado_repo.commits
             for epica in backlog_scrum["epicas"]:
-                if "tareas" in epica:
-                    for tarea in epica["tareas"]:
+                if "items" in epica:
+                    for item in epica["items"]:
                         # Mapear por concordancia de ID de tarea (ej: HU-001) o palabras clave del título en los mensajes de commits
-                        match_id = tarea.get("id", "").lower()
-                        match_titulo = tarea.get("titulo", "").lower()
+                        match_id = item.get("id", "").lower()
+                        match_titulo = item.get("titulo", "").lower()
                         
                         rel_commits = []
                         for c in commits:
@@ -320,11 +320,11 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
                             # Si los commits están alineados y son constructivos, marcamos como done
                             all_alineados = all(getattr(c, "alineado", True) for c in rel_commits)
                             if all_alineados:
-                                tarea["estado"] = "done"
-                                print(f"[AUTO-KANBAN] Tarea {tarea.get('id')} marcada como DONE basada en commits.")
+                                item["estado"] = "done"
+                                print(f"[AUTO-KANBAN] Tarea {item.get('id')} marcada como DONE basada en commits.")
                             else:
-                                tarea["estado"] = "in_progress"
-                                print(f"[AUTO-KANBAN] Tarea {tarea.get('id')} marcada como IN_PROGRESS por commits bajo revisión.")
+                                item["estado"] = "in_progress"
+                                print(f"[AUTO-KANBAN] Tarea {item.get('id')} marcada como IN_PROGRESS por commits bajo revisión.")
         
         # Serializar resultados a Firestore
         tracking_data = {
