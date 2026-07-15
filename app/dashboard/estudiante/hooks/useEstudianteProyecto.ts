@@ -181,6 +181,20 @@ export function useEstudianteProyecto(user: any) {
           progress: 100,
           detail: undefined
         });
+        
+        // Volver a consultar los datos del proyecto para actualizar el Kanban (backlog_scrum)
+        fetch(`/api/proyectos/${projectId}`)
+          .then(r => r.json())
+          .then(projData => {
+            if (projData && projData.proyectoId) {
+              setPlan((prev) => prev ? {
+                ...prev,
+                backlog_scrum: projData.backlog_scrum
+              } : null);
+            }
+          })
+          .catch(console.error);
+          
       } else if (data.tracking_status === "processing") {
         setTracking((prev) => ({
           ...prev,
