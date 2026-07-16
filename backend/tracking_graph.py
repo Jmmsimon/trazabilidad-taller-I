@@ -3,7 +3,7 @@ import json
 import uuid
 import urllib.request
 import urllib.parse
-from typing import Dict, List
+from typing import Dict, List, Optional
 from langgraph.graph import StateGraph, END
 
 from schemas import (
@@ -198,41 +198,68 @@ def fetch_github_data(repo_url: str, deep: bool = False):
 
 
 
+def _default_hito_id(state: TrackingState) -> str:
+    """Primer hito de la propuesta, o fallback estable."""
+    if state.propuesta_confirmada and state.propuesta_confirmada.hitos:
+        h = state.propuesta_confirmada.hitos[0]
+        return getattr(h, "id", None) or "hito-001"
+    return "hito-001"
+
+
+def _competencias_from_msg(msg: str) -> List[str]:
+    competencias = ["comp-git"]
+    msg_lower = msg.lower()
+    if any(x in msg_lower for x in ["back", "api", "db", "server", "model"]):
+        competencias.append("comp-backend")
+    if any(x in msg_lower for x in ["front", "ui", "style", "css", "html", "react", "view"]):
+        competencias.append("comp-frontend")
+    if "test" in msg_lower:
+        competencias.append("comp-testing")
+    if any(x in msg_lower for x in ["docker", "deploy", "ci", "cd", "yaml", "yml"]):
+        competencias.append("comp-devops")
+    return competencias
+
+
 # ── AG-DEVOPS ────────────────────────────────────────────────────────
 async def devops_node(state: TrackingState) -> Dict:
     """
     Recolecta evidencias del repo/deploy del alumno.
-    Si el repositorio es público en GitHub, intenta leer los commits reales mediante su API.
-    Si falla o no hay URL, usa valores por defecto / fallback.
+    Lectura profunda (deep=True): árbol, snippets y archivos por commit — igual que el auditor docente.
     """
-    print("[AG-DEVOPS] Recolectando evidencias de despliegue y commits...")
+    print("[AG-DEVOPS] Recolectando evidencias profundas de despliegue y commits...")
 
     repo_url = state.estado_repo.repo_url if state.estado_repo else None
     demo_url = state.estado_repo.demo_url if state.estado_repo else None
-
-    hito_ref = "hito-001"  # En producción vendrá de state.propuesta_confirmada
+    hito_ref = _default_hito_id(state)
 
     evidencias = []
     commits_info = []
     ultimo_commit_sha = None
     ultimo_commit_fecha = None
     ci_status = "unknown"
+    github_context: Dict = {}
 
     if repo_url:
-        github_data = fetch_github_data(repo_url)
+        github_data = fetch_github_data(repo_url, deep=True)
         if github_data.get("success"):
             commits_list = github_data.get("commits", [])
-            print(f"[AG-DEVOPS] Se leyeron {len(commits_list)} commits reales de GitHub.")
-            
-            # Map up to 10 commits to commits_info
-            for commit in commits_list[:10]:
+            files_by_sha = {
+                c.get("sha", ""): c.get("files_changed", [])
+                for c in github_data.get("commits_with_files", [])
+            }
+            print(
+                f"[AG-DEVOPS] Lectura profunda: {len(commits_list)} commits, "
+                f"{len(github_data.get('tree_files', []))} archivos, "
+                f"{len(github_data.get('snippets', {}))} snippets."
+            )
+
+            for commit in commits_list[:15]:
                 sha = commit.get("sha", "")
                 commit_info = commit.get("commit", {})
                 msg = commit_info.get("message", "")
                 fecha = commit_info.get("author", {}).get("date", "")
                 author = commit_info.get("author", {}).get("name", "")
                 html_url = commit.get("html_url", "")
-                
                 formatted_fecha = fecha.replace("T", " ").replace("Z", "")[:16]
                 commits_info.append(
                     CommitInfo(
@@ -240,71 +267,42 @@ async def devops_node(state: TrackingState) -> Dict:
                         mensaje=msg,
                         fecha=formatted_fecha,
                         author=author,
-                        url=html_url
+                        url=html_url,
+                        files_changed=files_by_sha.get(sha[:7], []),
                     )
                 )
 
-            # Mapear los primeros 3 commits reales a evidencias
-            for commit in commits_list[:3]:
-                sha = commit.get("sha", "")
-                commit_info = commit.get("commit", {})
-                msg = commit_info.get("message", "")
-                html_url = commit.get("html_url", "")
-                
-                # Mapeo simple de competencias de base
-                competencias = ["comp-git"]
-                msg_lower = msg.lower()
-                if any(x in msg_lower for x in ["back", "api", "db", "server", "model"]):
-                    competencias.append("comp-backend")
-                if any(x in msg_lower for x in ["front", "ui", "style", "css", "html", "react", "view"]):
-                    competencias.append("comp-frontend")
-                if "test" in msg_lower:
-                    competencias.append("comp-testing")
-                if any(x in msg_lower for x in ["docker", "deploy", "ci", "cd", "yaml", "yml"]):
-                    competencias.append("comp-devops")
-                
+            for commit in commits_list[:5]:
+                msg = commit.get("commit", {}).get("message", "")
                 evidencias.append(
                     Evidencia(
                         id=str(uuid.uuid4()),
                         hito_id=hito_ref,
                         tipo="codigo",
-                        url=html_url,
+                        url=commit.get("html_url", ""),
                         estado="subida",
-                        competencias_ids=competencias,
+                        competencias_ids=_competencias_from_msg(msg),
                     )
                 )
-                
+
             if commits_list:
                 ultimo_commit_sha = commits_list[0].get("sha", "")[:7]
-                ultimo_commit_fecha = commits_list[0].get("commit", {}).get("author", {}).get("date", "")[:10]
+                ultimo_commit_fecha = (
+                    commits_list[0].get("commit", {}).get("author", {}).get("date", "")[:10]
+                )
                 ci_status = "pass"
+
+            github_context = {
+                "tree_files": github_data.get("tree_files", [])[:120],
+                "snippets": github_data.get("snippets", {}),
+                "lenguajes": github_data.get("lenguajes", {}),
+                "bulk_commit_risk": github_data.get("bulk_commit_risk", False),
+                "commits_with_files": github_data.get("commits_with_files", []),
+                "total_commits": github_data.get("total_commits", len(commits_list)),
+                "autores_unicos": github_data.get("autores_unicos", []),
+            }
         else:
-            # Fallback si no se pudo leer el API pero hay URL (mantenemos evidencias simuladas basadas en su URL)
-            print("[AG-DEVOPS] Usando evidencias simuladas para la URL del repositorio.")
-            evidencias.append(
-                Evidencia(
-                    id=str(uuid.uuid4()),
-                    hito_id=hito_ref,
-                    tipo="codigo",
-                    url=f"{repo_url.rstrip('/')}/commit/abc123_fallback",
-                    estado="subida",
-                    competencias_ids=["comp-git", "comp-backend"],
-                )
-            )
-            import datetime
-            ultimo_commit_sha = "abc123_fallback"
-            ultimo_commit_fecha = datetime.date.today().isoformat()
-            ci_status = "pass"
-            
-            commits_info.append(
-                CommitInfo(
-                    sha="abc123f",
-                    mensaje="feat: setup initial mockup repository and backend base config",
-                    fecha=ultimo_commit_fecha + " 10:00",
-                    author="Estudiante Invitado",
-                    url=f"{repo_url.rstrip('/')}/commit/abc123_fallback"
-                )
-            )
+            print("[AG-DEVOPS] No se pudo leer GitHub (repo privado o API). Sin evidencias simuladas.")
 
     if demo_url:
         evidencias.append(
@@ -318,7 +316,6 @@ async def devops_node(state: TrackingState) -> Dict:
             )
         )
 
-    # Actualiza también el estado del repo
     estado_repo = EstadoRepo(
         repo_url=repo_url,
         ultimo_commit_sha=ultimo_commit_sha,
@@ -332,39 +329,88 @@ async def devops_node(state: TrackingState) -> Dict:
     return {
         "evidencias": evidencias,
         "estado_repo": estado_repo,
+        "github_context": github_context,
     }
+
+
+def _serialize_backlog_items(backlog_scrum: Optional[Dict]) -> List[Dict]:
+    """Aplana ítems del backlog Scrum para el prompt del AG-COMP."""
+    items: List[Dict] = []
+    if not backlog_scrum or not isinstance(backlog_scrum, dict):
+        return items
+    for epica in backlog_scrum.get("epicas", []) or []:
+        for item in epica.get("items", []) or []:
+            items.append({
+                "id": item.get("id"),
+                "tipo": item.get("tipo"),
+                "titulo": item.get("titulo"),
+                "quiero": item.get("quiero"),
+                "estado_actual": item.get("estado", "backlog"),
+                "epica": epica.get("titulo"),
+                "criterios": [
+                    c.get("descripcion") if isinstance(c, dict) else str(c)
+                    for c in (item.get("criterios") or [])
+                ][:5],
+            })
+    return items
 
 
 # ── AG-COMP ──────────────────────────────────────────────────────────
 async def competency_node(state: TrackingState) -> Dict:
-    """Mapea las evidencias subidas con competencias académicas y analiza los commits."""
-    print("[AG-COMP] Analizando competencias y validación semántica de commits...")
+    """Mapea evidencias/código/commits a competencias, hitos y estados Kanban."""
+    print("[AG-COMP] Analizando competencias, código y commits↔hitos (modo sincero)...")
 
-    # Serializa evidencias para el prompt
     evidencias_str = json.dumps(
         [e.model_dump() for e in state.evidencias], ensure_ascii=False
     )
-
-    # Serializa commits si existen
-    commits_str = ""
+    commits_str = "[]"
     if state.estado_repo and state.estado_repo.commits:
         commits_str = json.dumps(
             [c.model_dump() for c in state.estado_repo.commits], ensure_ascii=False
         )
 
-    # Referencia del backlog desde la propuesta confirmada
-    backlog_str = ""
+    hitos_str = "[]"
     if state.propuesta_confirmada:
-        hitos = [h.model_dump() for h in state.propuesta_confirmada.hitos]
-        backlog_str = json.dumps(hitos, ensure_ascii=False)
+        hitos_str = json.dumps(
+            [h.model_dump() for h in state.propuesta_confirmada.hitos],
+            ensure_ascii=False,
+        )
+
+    backlog_items = _serialize_backlog_items(state.backlog_scrum)
+    backlog_str = json.dumps(backlog_items, ensure_ascii=False)
+
+    ctx = state.github_context or {}
+    code_payload = {
+        "tree_files": (ctx.get("tree_files") or [])[:80],
+        "snippets": {
+            k: (v[:1200] if isinstance(v, str) else v)
+            for k, v in list((ctx.get("snippets") or {}).items())[:6]
+        },
+        "lenguajes": ctx.get("lenguajes") or {},
+        "bulk_commit_risk": ctx.get("bulk_commit_risk", False),
+        "commits_with_files": ctx.get("commits_with_files") or [],
+    }
+    code_str = json.dumps(code_payload, ensure_ascii=False)
 
     import datetime
     current_date = datetime.date.today().isoformat()
+    repo_url = state.estado_repo.repo_url if state.estado_repo else None
+    demo_url = state.estado_repo.demo_url if state.estado_repo else None
+    entregables = {
+        "repo_url_configurado": bool(repo_url),
+        "repo_url": repo_url,
+        "demo_url_configurado": bool(demo_url),
+        "demo_url": demo_url,
+        "total_commits": (ctx.get("total_commits") or len(state.estado_repo.commits or [])) if state.estado_repo else 0,
+    }
     user_prompt = (
         f"Fecha actual del sistema: {current_date}\n\n"
+        f"ENTREGABLES YA CONFIGURADOS POR EL ESTUDIANTE:\n{json.dumps(entregables, ensure_ascii=False)}\n\n"
         f"Evidencias subidas:\n{evidencias_str}\n\n"
-        f"Commits del repositorio a analizar:\n{commits_str}\n\n"
-        f"Backlog del proyecto:\n{backlog_str}"
+        f"Commits del repositorio:\n{commits_str}\n\n"
+        f"HITOS del roadmap:\n{hitos_str}\n\n"
+        f"BACKLOG SCRUM (ítems Kanban a mapear TODOS):\n{backlog_str}\n\n"
+        f"CÓDIGO REAL DEL REPOSITORIO:\n{code_str}"
     )
     response = await ask_claude(COMPETENCY_SYSTEM_PROMPT, user_prompt)
     data = clean_json_response(response)
@@ -387,7 +433,12 @@ async def competency_node(state: TrackingState) -> Dict:
         porcentaje_adquirido=data.get("porcentaje_adquirido", 0.0),
     )
 
-    # Actualizar estado de commits con la alineación y contribución calculada por la IA
+    VALID_KANBAN = {"backlog", "todo", "in_progress", "done"}
+    mapeo_raw = data.get("mapeo_tareas", {}) if isinstance(data.get("mapeo_tareas"), dict) else {}
+    mapeo_tareas = {
+        str(k): v for k, v in mapeo_raw.items() if v in VALID_KANBAN
+    }
+
     estado_repo = state.estado_repo
     if estado_repo and estado_repo.commits:
         commits_analizados = data.get("commits_analizados", [])
@@ -406,9 +457,12 @@ async def competency_node(state: TrackingState) -> Dict:
             if match:
                 commit.alineado = match.get("alineado", True)
                 commit.contribucion = match.get("contribucion", None)
+                commit.hito_ref = match.get("hito_ref")
+                ids = match.get("item_ids") or []
+                commit.item_ids = [str(x) for x in ids] if isinstance(ids, list) else []
             else:
                 commit.alineado = True
-                commit.contribucion = "Contribución técnica"
+                commit.contribucion = commit.contribucion or "Sin clasificación explícita de la IA"
             updated_commits.append(commit)
 
         estado_repo.commits = updated_commits
@@ -416,7 +470,7 @@ async def competency_node(state: TrackingState) -> Dict:
     return {
         "reporte_competencias": reporte,
         "estado_repo": estado_repo,
-        "mapeo_tareas": data.get("mapeo_tareas", {})
+        "mapeo_tareas": mapeo_tareas,
     }
 
 

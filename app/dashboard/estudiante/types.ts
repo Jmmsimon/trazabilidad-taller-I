@@ -82,6 +82,9 @@ export interface CommitInfo {
   url?: string;
   alineado?: boolean;
   contribucion?: string;
+  hito_ref?: string | null;
+  item_ids?: string[];
+  files_changed?: string[];
 }
 
 export interface EstadoRepo {
@@ -108,6 +111,8 @@ export interface TrackingData {
   reporte_competencias: ReporteCompetencias | null;
   estado_repo: EstadoRepo | null;
   evidencias: unknown[];
+  mapeo_tareas?: Record<string, string>;
+  kanban_updates?: Record<string, string>;
   tracking_history?: Array<{
     fecha: string;
     score_integridad: number;

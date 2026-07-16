@@ -39,6 +39,7 @@ import { BacklogTable } from "./components/BacklogTable";
 import { KanbanBoard } from "./components/KanbanBoard";
 import { RadarChart } from "./components/RadarChart";
 import { BacklogCards } from "./components/BacklogCards";
+import { CommitsHitosPanel } from "./components/CommitsHitosPanel";
 import { TIPO_ICONS, SEVERIDAD_COLORS, NIVEL_COLORS, scoreColor, barWidth, getSprintNum } from "./utils";
 
 export default function EstudianteDashboard() {
@@ -1256,19 +1257,30 @@ export default function EstudianteDashboard() {
                         </div>
 
                         <div className="flex justify-end pt-2">
-                          <button
-                            onClick={handleSaveConfig}
-                            disabled={isSavingConfig}
-                            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-indigo-100"
-                          >
-                            {isSavingConfig ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
-                              </>
-                            ) : (
-                              "Guardar y Analizar"
-                            )}
-                          </button>
+                          {(() => {
+                            const urlsChanged =
+                              repoUrl.trim() !== (plan.repo_url || "").trim() ||
+                              demoUrl.trim() !== (plan.demo_url || "").trim();
+                            const alreadyConfigured = Boolean(plan.repo_url);
+                            return (
+                              <button
+                                onClick={handleSaveConfig}
+                                disabled={isSavingConfig || !repoUrl.trim()}
+                                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-indigo-100"
+                              >
+                                {isSavingConfig ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    {urlsChanged ? "Guardando..." : "Analizando..."}
+                                  </>
+                                ) : urlsChanged && alreadyConfigured ? (
+                                  "Guardar y Analizar"
+                                ) : (
+                                  "Analizar"
+                                )}
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -1335,6 +1347,13 @@ export default function EstudianteDashboard() {
                             {/* Kanban Board */}
                             <div>
                               <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Kanban</h4>
+                              {tracking.data?.kanban_updates &&
+                                Object.keys(tracking.data.kanban_updates).length > 0 && (
+                                  <p className="text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 mb-3 font-semibold">
+                                    El agente actualizó {Object.keys(tracking.data.kanban_updates).length} tarjeta(s)
+                                    según commits y código del repo. Detalle en Analítica.
+                                  </p>
+                                )}
                               <KanbanBoard
                                 items={plan.backlog_scrum.epicas.flatMap(e => e.items ?? [])}
                                 onItemMove={(itemId, newEstado) => {
@@ -1426,88 +1445,96 @@ export default function EstudianteDashboard() {
                           )}
                         </div>
 
-                        {tracking.status === "completed" && tracking.data?.reporte_competencias?.competencias?.length ? (
+                        {tracking.status === "completed" && tracking.data ? (
                           <div className="space-y-8">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                              {/* Radar Chart Section */}
-                              {tracking.data.reporte_competencias.competencias.length >= 3 && (
-                                <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
-                                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Radar de Competencias</h4>
-                                  <RadarChart competencias={tracking.data.reporte_competencias.competencias} />
-                                </div>
-                              )}
+                            <CommitsHitosPanel
+                              commits={tracking.data.estado_repo?.commits || []}
+                              kanbanUpdates={tracking.data.kanban_updates}
+                            />
 
-                              {/* Line Chart Section (Historial de Avance) */}
-                              <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
-                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                                  <Activity className="w-3.5 h-3.5 text-indigo-500" /> Historial de Desempeño
-                                </h4>
-                                {tracking.data.tracking_history && tracking.data.tracking_history.length > 0 ? (
-                                  <div className="w-full h-[300px] mt-2">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                      <LineChart data={tracking.data.tracking_history} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                        <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={9} />
-                                        <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
-                                        <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                                        <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                        <Line name="Score Integridad" type="monotone" dataKey="score_integridad" stroke="#6366f1" strokeWidth={2.5} activeDot={{ r: 6 }} />
-                                        <Line name="% Competencias" type="monotone" dataKey="porcentaje_competencias" stroke="#10b981" strokeWidth={2.5} />
-                                      </LineChart>
-                                    </ResponsiveContainer>
-                                  </div>
-                                ) : (
-                                  <div className="h-[300px] flex items-center justify-center text-slate-450 text-xs italic">
-                                    Historial insuficiente. Realiza más análisis para visualizar la línea de tiempo.
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Competencies List Section */}
-                            <div className="w-full space-y-4">
-                              <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-2">Resumen Académico</h4>
-
-                              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                                {tracking.data.reporte_competencias.competencias.map((c) => {
-                                  const levelColor = NIVEL_COLORS[c.nivel];
-                                  return (
-                                    <div
-                                      key={c.id}
-                                      className={`flex items-center justify-between border rounded-2xl p-4 transition-all ${c.adquirida
-                                          ? "bg-indigo-50/30 border-indigo-150"
-                                          : "bg-slate-50/50 border-slate-200"
-                                        }`}
-                                    >
-                                      <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${c.adquirida ? "bg-indigo-100 text-indigo-600" : "bg-slate-200 text-slate-500"
-                                          }`}>
-                                          <Trophy className="w-4 h-4" />
-                                        </div>
-                                        <div className="min-w-0">
-                                          <p className="text-xs font-bold text-slate-800 truncate">{c.nombre}</p>
-                                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                                            Nivel: <span className={`${levelColor} font-bold`}>{c.nivel}</span>
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      <div>
-                                        {c.adquirida ? (
-                                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                                            Adquirida
-                                          </span>
-                                        ) : (
-                                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
-                                            En progreso
-                                          </span>
-                                        )}
-                                      </div>
+                            {tracking.data.reporte_competencias?.competencias?.length ? (
+                              <>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                                  {tracking.data.reporte_competencias.competencias.length >= 3 && (
+                                    <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Radar de Competencias</h4>
+                                      <RadarChart competencias={tracking.data.reporte_competencias.competencias} />
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                                  )}
+
+                                  <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                                      <Activity className="w-3.5 h-3.5 text-indigo-500" /> Historial de Desempeño
+                                    </h4>
+                                    {tracking.data.tracking_history && tracking.data.tracking_history.length > 0 ? (
+                                      <div className="w-full h-[300px] mt-2">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <LineChart data={tracking.data.tracking_history} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={9} />
+                                            <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
+                                            <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                                            <Legend wrapperStyle={{ fontSize: "10px" }} />
+                                            <Line name="Score Integridad" type="monotone" dataKey="score_integridad" stroke="#6366f1" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                                            <Line name="% Competencias" type="monotone" dataKey="porcentaje_competencias" stroke="#10b981" strokeWidth={2.5} />
+                                          </LineChart>
+                                        </ResponsiveContainer>
+                                      </div>
+                                    ) : (
+                                      <div className="h-[300px] flex items-center justify-center text-slate-450 text-xs italic">
+                                        Historial insuficiente. Realiza más análisis para visualizar la línea de tiempo.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="w-full space-y-4">
+                                  <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-2">Resumen Académico</h4>
+                                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                                    {tracking.data.reporte_competencias.competencias.map((c) => {
+                                      const levelColor = NIVEL_COLORS[c.nivel];
+                                      return (
+                                        <div
+                                          key={c.id}
+                                          className={`flex items-center justify-between border rounded-2xl p-4 transition-all ${
+                                            c.adquirida
+                                              ? "bg-indigo-50/30 border-indigo-150"
+                                              : "bg-slate-50/50 border-slate-200"
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-3 min-w-0">
+                                            <div
+                                              className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                c.adquirida ? "bg-indigo-100 text-indigo-600" : "bg-slate-200 text-slate-500"
+                                              }`}
+                                            >
+                                              <Trophy className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="text-xs font-bold text-slate-800 truncate">{c.nombre}</p>
+                                              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                                                Nivel: <span className={`${levelColor} font-bold`}>{c.nivel}</span>
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            {c.adquirida ? (
+                                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                                Adquirida
+                                              </span>
+                                            ) : (
+                                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                                En progreso
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </>
+                            ) : null}
                           </div>
                         ) : tracking.status === "processing" ? (
                           <div className="flex flex-col items-center justify-center py-12 space-y-4">

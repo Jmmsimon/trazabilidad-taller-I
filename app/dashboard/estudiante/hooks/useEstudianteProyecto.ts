@@ -181,20 +181,18 @@ export function useEstudianteProyecto(user: any) {
           progress: 100,
           detail: undefined
         });
-        
-        // Volver a consultar los datos del proyecto para actualizar el Kanban (backlog_scrum)
-        fetch(`/api/proyectos/${projectId}`)
-          .then(r => r.json())
-          .then(projData => {
-            if (projData && projData.proyectoId) {
-              setPlan((prev) => prev ? {
-                ...prev,
-                backlog_scrum: projData.backlog_scrum
-              } : null);
-            }
-          })
-          .catch(console.error);
-          
+
+        // Kanban actualizado por el agente (viene en tracking/status)
+        if (data.backlog_scrum) {
+          setPlan((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  backlog_scrum: data.backlog_scrum,
+                }
+              : null
+          );
+        }
       } else if (data.tracking_status === "processing") {
         setTracking((prev) => ({
           ...prev,
@@ -271,8 +269,8 @@ export function useEstudianteProyecto(user: any) {
         throw new Error("No se pudo iniciar el seguimiento");
       }
     } catch (err) {
-      console.error("Error saving config and starting tracking:", err);
-      alert("Error al guardar y analizar: " + (err instanceof Error ? err.message : String(err)));
+      console.error("Error starting tracking analysis:", err);
+      alert("Error al analizar: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsSavingConfig(false);
     }

@@ -121,8 +121,12 @@ export function ProfesorMetrics({
             disabled={isAnalyzing}
             className="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
           >
-            {isAnalyzing ? "Ejecutando Auditoría..." : "Iniciar Análisis Trazabilidad"}
+            <RefreshCw className={`w-3.5 h-3.5 ${isAnalyzing ? "animate-spin" : ""}`} />
+            {isAnalyzing ? "Analizando..." : "Analizar"}
           </button>
+          <p className="text-[10px] text-slate-400 text-center font-medium leading-snug">
+            Mismo análisis sincerado que en Analítica. Actualiza score, commits y Kanban del proyecto.
+          </p>
 
           <div className="grid grid-cols-2 gap-2">
             <button

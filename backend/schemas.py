@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal, Dict
+from typing import List, Optional, Literal, Dict, Any
 from enum import Enum
 from pydantic import BaseModel, Field
 
@@ -76,6 +76,9 @@ class CommitInfo(BaseModel):
     url: Optional[str] = None
     alineado: bool = True
     contribucion: Optional[str] = None
+    hito_ref: Optional[str] = None
+    item_ids: List[str] = Field(default_factory=list)
+    files_changed: List[str] = Field(default_factory=list)
 
 
 class EstadoRepo(BaseModel):
@@ -111,6 +114,9 @@ class TrackingState(BaseModel):
     diagnostico_riesgo: str = ""
     resumen_ejecutivo: str = ""
     ciclo_activo: bool = True
+    # Contexto profundo del repo (árbol, snippets) + backlog Scrum para AG-COMP
+    github_context: Optional[Dict[str, Any]] = None
+    backlog_scrum: Optional[Dict[str, Any]] = None
 
 # ───────────────────────────────────────────────────────────
 #  Scrum artifacts

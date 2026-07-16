@@ -32,6 +32,9 @@ export interface CommitInfo {
   url?: string;
   alineado?: boolean;
   contribucion?: string;
+  hito_ref?: string | null;
+  item_ids?: string[];
+  files_changed?: string[];
 }
 
 export interface ProyectoResumen {
@@ -104,6 +107,13 @@ export interface ProyectoDetalle {
       demo_url: string | null;
       commits?: CommitInfo[];
     };
+    mapeo_tareas?: Record<string, string>;
+    kanban_updates?: Record<string, string>;
+    tracking_history?: Array<{
+      fecha: string;
+      score_integridad: number;
+      porcentaje_competencias: number;
+    }>;
   };
   tracking_history?: Array<{
     fecha: string;

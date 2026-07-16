@@ -19,8 +19,6 @@ import {
   LogOut,
   Gauge,
   Bot,
-  GitBranch,
-  Award,
   Trophy,
 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
@@ -32,6 +30,7 @@ import { BacklogReviewer } from "./components/BacklogReviewer";
 import { GitCommitsTracker } from "./components/GitCommitsTracker";
 import { BacklogAuditor } from "./components/BacklogAuditor";
 import { RadarChart } from "../estudiante/components/RadarChart";
+import { CommitsHitosPanel } from "../estudiante/components/CommitsHitosPanel";
 import { NIVEL_COLORS } from "./types";
 
 export default function ProfesorDashboard() {
@@ -52,6 +51,8 @@ export default function ProfesorDashboard() {
     setMotivo,
     isAnalyzing,
     analysisMessage,
+    analysisActiveAgent,
+    analysisProgress,
     loadingAprobar,
     loadingRechazar,
     isArchiving,
@@ -374,96 +375,171 @@ export default function ProfesorDashboard() {
                             <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4 flex-wrap">
                               <div className="flex items-center gap-2 text-indigo-650">
                                 <BarChart3 className="w-6 h-6" />
-                                <h3 className="text-xl font-bold">Análisis de Competencias</h3>
+                                <h3 className="text-xl font-bold">Analítica de Trazabilidad</h3>
                               </div>
+                              <button
+                                type="button"
+                                onClick={handleReAnalizar}
+                                disabled={isAnalyzing}
+                                className="text-xs font-bold px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white flex items-center gap-1.5 cursor-pointer"
+                                title="Mismo análisis que en Auditoría Hitos"
+                              >
+                                {isAnalyzing ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                )}
+                                Analizar
+                              </button>
                             </div>
 
-                            {detalle.tracking && detalle.tracking.reporte_competencias?.competencias?.length ? (
+                            {detalle.tracking ? (
                               <div className="space-y-8">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                                  {/* Radar Chart Section */}
-                                  {detalle.tracking.reporte_competencias.competencias.length >= 3 && (
-                                    <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
-                                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Radar de Competencias</h4>
-                                      <RadarChart competencias={detalle.tracking.reporte_competencias.competencias as any} />
-                                    </div>
-                                  )}
-
-                                  {/* Line Chart Section (Historial de Avance) */}
-                                  <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
-                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                                      <Activity className="w-3.5 h-3.5 text-indigo-500" /> Historial de Desempeño
-                                    </h4>
-                                    {detalle.tracking_history && detalle.tracking_history.length > 0 ? (
-                                      <div className="w-full h-[300px] mt-2">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                          <LineChart data={detalle.tracking_history} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                            <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={9} />
-                                            <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
-                                            <Tooltip contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                                            <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                            <Line name="Score Integridad" type="monotone" dataKey="score_integridad" stroke="#6366f1" strokeWidth={2.5} activeDot={{ r: 6 }} />
-                                            <Line name="% Competencias" type="monotone" dataKey="porcentaje_competencias" stroke="#10b981" strokeWidth={2.5} />
-                                          </LineChart>
-                                        </ResponsiveContainer>
-                                      </div>
-                                    ) : (
-                                      <div className="h-[300px] flex items-center justify-center text-slate-450 text-xs italic">
-                                        Historial insuficiente. Realiza más análisis para visualizar la línea de tiempo.
-                                      </div>
-                                    )}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Score integridad</p>
+                                    <p className="text-2xl font-black text-indigo-700 mt-1">
+                                      {detalle.tracking.score_integridad ?? 0}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Competencias</p>
+                                    <p className="text-2xl font-black text-emerald-700 mt-1">
+                                      {detalle.tracking.reporte_competencias?.porcentaje_adquirido ?? 0}%
+                                    </p>
+                                  </div>
+                                  <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Commits analizados</p>
+                                    <p className="text-2xl font-black text-slate-800 mt-1">
+                                      {detalle.tracking.estado_repo?.commits?.length ?? 0}
+                                    </p>
                                   </div>
                                 </div>
 
-                                {/* Competencies List Section */}
-                                <div className="w-full space-y-4">
-                                  <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-2">Resumen Académico</h4>
+                                {detalle.tracking.resumen_ejecutivo && (
+                                  <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 mb-2">
+                                      Resumen ejecutivo
+                                    </p>
+                                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                                      {detalle.tracking.resumen_ejecutivo}
+                                    </p>
+                                  </div>
+                                )}
 
-                                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                                    {detalle.tracking.reporte_competencias.competencias.map((c) => {
-                                      const levelColor = NIVEL_COLORS[c.nivel] || "text-slate-500";
-                                      return (
-                                        <div
-                                          key={c.id}
-                                          className={`flex items-center justify-between border rounded-2xl p-4 transition-all ${c.adquirida
-                                              ? "bg-indigo-50/30 border-indigo-150"
-                                              : "bg-slate-50/50 border-slate-200"
-                                            }`}
-                                        >
-                                          <div className="flex items-center gap-3 min-w-0">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${c.adquirida ? "bg-indigo-100 text-indigo-600" : "bg-slate-200 text-slate-500"
-                                              }`}>
-                                              <Trophy className="w-4 h-4" />
-                                            </div>
-                                            <div className="min-w-0">
-                                              <p className="text-xs font-bold text-slate-800 truncate">{c.nombre}</p>
-                                              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                                                Nivel: <span className={`${levelColor} font-bold`}>{c.nivel}</span>
-                                              </p>
-                                            </div>
-                                          </div>
+                                <CommitsHitosPanel
+                                  commits={detalle.tracking.estado_repo?.commits || []}
+                                  kanbanUpdates={detalle.tracking.kanban_updates}
+                                />
 
-                                          <div>
-                                            {c.adquirida ? (
-                                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                                                Adquirida
-                                              </span>
-                                            ) : (
-                                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
-                                                En progreso
-                                              </span>
-                                            )}
-                                          </div>
+                                {detalle.tracking.reporte_competencias?.competencias?.length ? (
+                                  <>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                                      {detalle.tracking.reporte_competencias.competencias.length >= 3 && (
+                                        <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">
+                                            Radar de Competencias
+                                          </h4>
+                                          <RadarChart
+                                            competencias={detalle.tracking.reporte_competencias.competencias as any}
+                                          />
                                         </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
+                                      )}
+
+                                      <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center">
+                                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                                          <Activity className="w-3.5 h-3.5 text-indigo-500" /> Historial de Desempeño
+                                        </h4>
+                                        {(detalle.tracking_history || detalle.tracking.tracking_history || []).length > 0 ? (
+                                          <div className="w-full h-[300px] mt-2">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                              <LineChart
+                                                data={detalle.tracking_history || detalle.tracking.tracking_history}
+                                                margin={{ top: 10, right: 20, left: -20, bottom: 0 }}
+                                              >
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                                <XAxis dataKey="fecha" stroke="#94a3b8" fontSize={9} />
+                                                <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
+                                                <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                                                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                                                <Line name="Score Integridad" type="monotone" dataKey="score_integridad" stroke="#6366f1" strokeWidth={2.5} activeDot={{ r: 6 }} />
+                                                <Line name="% Competencias" type="monotone" dataKey="porcentaje_competencias" stroke="#10b981" strokeWidth={2.5} />
+                                              </LineChart>
+                                            </ResponsiveContainer>
+                                          </div>
+                                        ) : (
+                                          <div className="h-[220px] flex items-center justify-center text-slate-450 text-xs italic">
+                                            Historial insuficiente. Lanza otro análisis para ver la línea de tiempo.
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="w-full space-y-4">
+                                      <h4 className="text-xs font-bold text-slate-450 uppercase tracking-wider mb-2">
+                                        Resumen Académico
+                                      </h4>
+                                      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                                        {detalle.tracking.reporte_competencias.competencias.map((c) => {
+                                          const levelColor = NIVEL_COLORS[c.nivel] || "text-slate-500";
+                                          return (
+                                            <div
+                                              key={c.id}
+                                              className={`flex items-center justify-between border rounded-2xl p-4 transition-all ${
+                                                c.adquirida
+                                                  ? "bg-indigo-50/30 border-indigo-150"
+                                                  : "bg-slate-50/50 border-slate-200"
+                                              }`}
+                                            >
+                                              <div className="flex items-center gap-3 min-w-0">
+                                                <div
+                                                  className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                    c.adquirida
+                                                      ? "bg-indigo-100 text-indigo-600"
+                                                      : "bg-slate-200 text-slate-500"
+                                                  }`}
+                                                >
+                                                  <Trophy className="w-4 h-4" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                  <p className="text-xs font-bold text-slate-800 truncate">{c.nombre}</p>
+                                                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                                                    Nivel: <span className={`${levelColor} font-bold`}>{c.nivel}</span>
+                                                  </p>
+                                                </div>
+                                              </div>
+                                              <div>
+                                                {c.adquirida ? (
+                                                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                    Adquirida
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                                                    En progreso
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </>
+                                ) : null}
                               </div>
                             ) : (
-                              <div className="text-center py-10 text-slate-500 italic text-sm">
-                                No hay datos de analítica de competencias aún. Completa el análisis de trazabilidad.
+                              <div className="text-center py-10 space-y-3">
+                                <p className="text-slate-500 text-sm font-medium">
+                                  Aún no hay analítica. Lanza el análisis sincerado para ver commits, hitos y competencias.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={handleReAnalizar}
+                                  disabled={isAnalyzing}
+                                  className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" /> Analizar ahora
+                                </button>
                               </div>
                             )}
                           </div>
@@ -478,148 +554,74 @@ export default function ProfesorDashboard() {
         </div>
       </div>
 
-      {/* Modal de Carga de Análisis de IA */}
+      {/* Modal de agentes sincerados (progreso real del backend) */}
       {isAnalyzing && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-slate-900 border border-slate-200/85 dark:border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center relative overflow-hidden"
+            className="bg-white border border-slate-200/85 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center relative overflow-hidden"
           >
-            {/* Soft decorative background glows inside modal */}
             <div className="absolute top-[-40%] left-[-40%] w-[80%] h-[80%] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-[-40%] right-[-40%] w-[80%] h-[80%] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Header / Radar Animation */}
-            <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-4 border-indigo-100 dark:border-indigo-950 animate-ping opacity-45" />
-              <div className="absolute inset-2 rounded-full border-4 border-indigo-200 dark:border-indigo-900 animate-pulse" />
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none z-10 animate-bounce">
-                <Bot className="w-8 h-8 text-white" />
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-100 animate-ping opacity-40" />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg z-10">
+                <Bot className="w-7 h-7 text-white" />
               </div>
             </div>
 
-            {/* Status title */}
-            <div className="space-y-2">
-              <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100">
-                Ejecutando Agentes de IA
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Auditoría en tiempo real para el proyecto
+            <div className="space-y-1">
+              <h3 className="text-xl font-extrabold text-slate-800">Agentes sincerados</h3>
+              <p className="text-sm text-slate-500 font-medium">
+                Lectura profunda de código, commits ↔ hitos y Kanban
               </p>
-                   {/* Diagrama de Flujo de Agentes Animado */}
-            <div className="relative py-8 flex items-center justify-between max-w-[280px] mx-auto z-10 select-none">
-              {/* Línea de conexión de fondo */}
-              <div className="absolute top-1/2 left-4 right-4 h-0.5 bg-slate-100 dark:bg-slate-800 -translate-y-1/2 z-0" />
-              
-              {/* Línea de progreso brillante animada */}
-              <motion.div 
-                className="absolute top-1/2 left-4 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 -translate-y-1/2 z-0"
-                initial={{ width: "0%" }}
-                animate={{ 
-                  width: 
-                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando") ? "33%" :
-                    analysisMessage.includes("evidencias") || analysisMessage.includes("competencias") ? "66%" : "100%"
-                }}
-                transition={{ duration: 1.2, ease: "easeInOut" }}
-              />
+              <p className="text-2xl font-black text-indigo-600 pt-1">{analysisProgress || 0}%</p>
+            </div>
 
-              {/* Glowing data packet particle flowing between active nodes */}
-              <motion.div
-                className="absolute w-3.5 h-3.5 rounded-full bg-indigo-500 blur-[1px] shadow-[0_0_12px_#6366f1] z-10"
-                animate={{
-                  x: 
-                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando")
-                      ? [4, 86, 4]
-                      : analysisMessage.includes("evidencias") || analysisMessage.includes("competencias")
-                      ? [86, 172, 86]
-                      : [172, 246, 172]
-                }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                style={{ top: "calc(50% - 7px)" }}
-              />
+            <div className="space-y-2 text-left">
+              {[
+                { id: "ag_devops", label: "DevOps Auditor", desc: "Commits, árbol y snippets del repo" },
+                { id: "ag_comp", label: "Competency Analyzer", desc: "Commits ↔ hitos y mapeo Kanban" },
+                { id: "ag_003_analyst", label: "Integrity Analyst", desc: "Score e integridad académica" },
+                { id: "ag_004_reporter", label: "Executive Reporter", desc: "Resumen ejecutivo final" },
+              ].map((ag) => {
+                const order = ["ag_devops", "ag_comp", "ag_003_analyst", "ag_004_reporter"];
+                const activeIdx = Math.max(0, order.indexOf(analysisActiveAgent || "ag_devops"));
+                const thisIdx = order.indexOf(ag.id);
+                const done = thisIdx < activeIdx;
+                const active = thisIdx === activeIdx;
+                return (
+                  <div
+                    key={ag.id}
+                    className={`rounded-xl border px-3 py-2.5 flex items-start gap-2 ${
+                      active
+                        ? "border-indigo-200 bg-indigo-50"
+                        : done
+                          ? "border-emerald-100 bg-emerald-50/50"
+                          : "border-slate-100 bg-slate-50/50"
+                    }`}
+                  >
+                    {done ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    ) : active ? (
+                      <Loader2 className="w-4 h-4 text-indigo-600 animate-spin mt-0.5 flex-shrink-0" />
+                    ) : (
+                      <span className="w-4 h-4 rounded-full border border-slate-300 mt-0.5 flex-shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">{ag.label}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">{ag.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-              {/* Node 1: DevOps */}
-              <div className="relative z-10 flex flex-col items-center gap-1.5">
-                <motion.div 
-                  animate={
-                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando") 
-                      ? { scale: [1, 1.12, 1] } 
-                      : {}
-                  }
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center border-2 transition-all ${
-                    analysisMessage.includes("Git") || analysisMessage.includes("Iniciando")
-                      ? "bg-indigo-500 border-indigo-400 text-white shadow-lg shadow-indigo-200 dark:shadow-none"
-                      : analysisMessage.includes("evidencias") || analysisMessage.includes("competencias") || analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
-                      ? "bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-100 dark:shadow-none"
-                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600"
-                  }`}
-                  title="AG-001 DevOps"
-                >
-                  {analysisMessage.includes("evidencias") || analysisMessage.includes("competencias") || analysisMessage.includes("métricas") || analysisMessage.includes("riesgo") ? (
-                    <CheckCircle2 className="w-5 h-5 text-white" />
-                  ) : (
-                    <GitBranch className="w-5 h-5" />
-                  )}
-                </motion.div>
-                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">AG-001 (DevOps)</span>
-              </div>
-
-              {/* Node 2: Competency */}
-              <div className="relative z-10 flex flex-col items-center gap-1.5">
-                <motion.div 
-                  animate={
-                    analysisMessage.includes("evidencias") || analysisMessage.includes("competencias")
-                      ? { scale: [1, 1.12, 1] } 
-                      : {}
-                  }
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center border-2 transition-all ${
-                    analysisMessage.includes("evidencias") || analysisMessage.includes("competencias")
-                      ? "bg-purple-500 border-purple-400 text-white shadow-lg shadow-purple-200 dark:shadow-none"
-                      : analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
-                      ? "bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-100 dark:shadow-none"
-                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600"
-                  }`}
-                  title="AG-002 Competency"
-                >
-                  {analysisMessage.includes("métricas") || analysisMessage.includes("riesgo") ? (
-                    <CheckCircle2 className="w-5 h-5 text-white" />
-                  ) : (
-                    <Award className="w-5 h-5" />
-                  )}
-                </motion.div>
-                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">AG-002 (Comp)</span>
-              </div>
-
-              {/* Node 3: Analyst */}
-              <div className="relative z-10 flex flex-col items-center gap-1.5">
-                <motion.div 
-                  animate={
-                    analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
-                      ? { scale: [1, 1.12, 1] } 
-                      : {}
-                  }
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center border-2 transition-all ${
-                    analysisMessage.includes("métricas") || analysisMessage.includes("riesgo")
-                      ? "bg-pink-500 border-pink-400 text-white shadow-lg shadow-pink-200 dark:shadow-none"
-                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600"
-                  }`}
-                  title="AG-003 Analyst"
-                >
-                  <Shield className="w-5 h-5" />
-                </motion.div>
-                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400">AG-003 (Analyst)</span>
-              </div>
-            </div>            </div>
-
-            {/* Live Progress Message Box */}
-            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-150 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex items-center gap-3">
               <Loader2 className="w-5 h-5 text-indigo-500 animate-spin flex-shrink-0" />
-              <p className="text-xs text-slate-600 dark:text-slate-300 font-bold text-left">
-                {analysisMessage || "Ejecutando..."}
+              <p className="text-xs text-slate-600 font-bold text-left">
+                {analysisMessage || "Ejecutando análisis..."}
               </p>
             </div>
           </motion.div>

@@ -35,13 +35,23 @@ def _find_col(headers: List[str], candidates: List[str]) -> Optional[str]:
 
 def _normalize_estado(raw: str) -> str:
     """Normaliza el estado a 'To Do', 'In Progress' o 'Done'."""
-    s = raw.strip().lower()
-    if s in ("done", "terminado", "completado", "listo", "cerrado",
-             "finished", "complete", "hecho"):
+    s = raw.strip().lower().replace("_", " ").replace("-", " ")
+    if s in (
+        "done", "terminado", "completado", "listo", "cerrado",
+        "finished", "complete", "hecho", "finalizado", "ready",
+    ):
         return "Done"
-    if s in ("in progress", "en progreso", "en curso", "doing", "wip",
-             "in_progress", "progreso", "desarrollo"):
+    if s in (
+        "in progress", "en progreso", "en curso", "doing", "wip",
+        "progreso", "desarrollo", "working", "activo",
+    ):
         return "In Progress"
+    # Alias Kanban / español frecuente → To Do
+    if s in (
+        "to do", "todo", "por hacer", "pendiente", "backlog",
+        "sin asignar", "nuevo", "new", "pending", "open",
+    ):
+        return "To Do"
     return "To Do"
 
 
@@ -71,27 +81,59 @@ def _normalize_tipo(raw: str) -> str:
 # Parser CSV
 # ──────────────────────────────────────────────────────────────────────
 
+def _strip_bom(text: str) -> str:
+    """Elimina BOM UTF-8 / UTF-16 residuales de Excel."""
+    if not text:
+        return text
+    return text.lstrip("\ufeff").lstrip("\ufffe")
+
+
+def _read_csv_rows(csv_text: str):
+    """Detecta separador y devuelve (headers, rows). Reintenta con el otro sep si falla."""
+    text = _strip_bom(csv_text).strip()
+    if not text:
+        raise ValueError("El CSV está vacío.")
+
+    first_line = text.splitlines()[0]
+    preferred = ";" if first_line.count(";") > first_line.count(",") else ","
+    candidates = [preferred, "," if preferred == ";" else ";"]
+
+    last_headers: List[str] = []
+    for sep in candidates:
+        reader = csv.DictReader(io.StringIO(text), delimiter=sep)
+        headers = [((h or "").strip()) for h in (reader.fieldnames or [])]
+        headers = [h for h in headers if h]
+        last_headers = headers
+        if not headers:
+            continue
+        # Si solo hay 1 columna y el otro sep existe en la cabecera, probar siguiente
+        if len(headers) == 1 and ("," in first_line or ";" in first_line) and sep == preferred:
+            continue
+        rows = list(reader)
+        if rows or _find_col(headers, _COL_TITULO):
+            return headers, rows
+
+    raise ValueError(
+        f"No se pudo interpretar el CSV. Columnas detectadas: {last_headers}. "
+        "Usa cabeceras como: id,titulo,tipo,estado,sprint (separadas por , o ;)."
+    )
+
+
 def parse_csv(csv_text: str) -> List[BacklogAuditItem]:
     """
     Parsea un string CSV y devuelve lista de BacklogAuditItem.
-    Tolerante a columnas en español/inglés y separadores ; o ,
+    Tolerante a BOM, columnas en español/inglés, estados Kanban y separadores ; o ,
     """
     items: List[BacklogAuditItem] = []
-
-    # Detectar separador dominante
-    first_line = csv_text.strip().splitlines()[0] if csv_text.strip() else ""
-    sep = ";" if first_line.count(";") > first_line.count(",") else ","
-
-    reader = csv.DictReader(io.StringIO(csv_text), delimiter=sep)
-    headers = list(reader.fieldnames or [])
+    headers, rows = _read_csv_rows(csv_text)
 
     col_titulo = _find_col(headers, _COL_TITULO)
-    col_tipo   = _find_col(headers, _COL_TIPO)
+    col_tipo = _find_col(headers, _COL_TIPO)
     col_estado = _find_col(headers, _COL_ESTADO)
     col_sprint = _find_col(headers, _COL_SPRINT)
-    col_prior  = _find_col(headers, _COL_PRIORIDAD)
-    col_desc   = _find_col(headers, _COL_DESC)
-    id_col     = _find_col(headers, ["id", "item_id", "código", "codigo", "code"])
+    col_prior = _find_col(headers, _COL_PRIORIDAD)
+    col_desc = _find_col(headers, _COL_DESC)
+    id_col = _find_col(headers, ["id", "item_id", "código", "codigo", "code", "key"])
 
     if not col_titulo:
         raise ValueError(
@@ -100,26 +142,31 @@ def parse_csv(csv_text: str) -> List[BacklogAuditItem]:
             "Usa una de: titulo, title, nombre, name, historia, tarea."
         )
 
-    for i, row in enumerate(reader):
-        titulo = row.get(col_titulo, "").strip()
+    for i, row in enumerate(rows):
+        # DictReader puede dejar claves None; normalizar acceso
+        def cell(col: Optional[str]) -> str:
+            if not col:
+                return ""
+            return str(row.get(col, "") or "").strip()
+
+        titulo = cell(col_titulo)
         if not titulo:
-            continue  # saltar filas vacías
+            continue
 
-        tipo   = _normalize_tipo(row.get(col_tipo, "HU") if col_tipo else "HU")
-        estado = _normalize_estado(row.get(col_estado, "To Do") if col_estado else "To Do")
-        desc   = row.get(col_desc, "").strip() if col_desc else None
+        tipo = _normalize_tipo(cell(col_tipo) or "HU")
+        estado = _normalize_estado(cell(col_estado) or "To Do")
+        desc = cell(col_desc) or None
 
-        sprint_raw = row.get(col_sprint, "") if col_sprint else ""
         sprint: Optional[int] = None
+        sprint_raw = cell(col_sprint)
         if sprint_raw:
             try:
-                sprint = int(str(sprint_raw).strip())
+                sprint = int("".join(ch for ch in sprint_raw if ch.isdigit()) or "0") or None
             except ValueError:
                 pass
 
-        prioridad = row.get(col_prior, "Media").strip() if col_prior else "Media"
-
-        item_id = row.get(id_col, "").strip() if id_col else ""
+        prioridad = cell(col_prior) or "Media"
+        item_id = cell(id_col)
         if not item_id:
             item_id = f"{tipo}-{str(i + 1).zfill(3)}"
 
@@ -132,6 +179,12 @@ def parse_csv(csv_text: str) -> List[BacklogAuditItem]:
             prioridad=prioridad,
             descripcion=desc,
         ))
+
+    if not items:
+        raise ValueError(
+            "El CSV no tiene filas con título válido. "
+            "Revisa que haya datos debajo de la cabecera."
+        )
 
     return items
 

@@ -122,6 +122,14 @@ export function GitCommitsTracker({ detalle, getCommitChartData }: GitCommitsTra
                           </span>
                         </>
                       )}
+                      {(commit.hito_ref || (commit.item_ids && commit.item_ids.length > 0)) && (
+                        <span className="text-[10px] font-bold text-slate-600 w-full">
+                          {commit.hito_ref ? `Hito: ${commit.hito_ref}` : ""}
+                          {commit.item_ids && commit.item_ids.length > 0
+                            ? ` · Ítems: ${commit.item_ids.join(", ")}`
+                            : ""}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

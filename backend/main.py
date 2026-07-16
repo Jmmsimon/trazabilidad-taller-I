@@ -208,42 +208,51 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
             "tracking_detail": "Inspeccionando commits y repositorio en GitHub..."
         })
 
+        backlog_scrum = project.get("backlog_scrum") or {}
+        if not isinstance(backlog_scrum, dict):
+            backlog_scrum = {}
+
         initial_state = TrackingState(
             alumno_id=alumno_id,
             propuesta_confirmada=propuesta_confirmada,
             estado_repo=estado_repo,
+            backlog_scrum=backlog_scrum,
         )
 
-        # ── Nodo 1: DevOps ──
+        # ── Nodo 1: DevOps (lectura profunda del repo) ──
         actualizar_proyecto(proyecto_id, {
             "tracking_active_agent": "ag_devops",
             "tracking_progress": 25,
-            "tracking_detail": "Agente DevOps analizando integridad de pipelines y ramas..."
+            "tracking_detail": "Agente DevOps leyendo commits, árbol de archivos y código del repositorio..."
         })
         from tracking_graph import devops_node, competency_node, analyst_node, reporter_node
         
         devops_res = await devops_node(initial_state)
-        # Mezclamos el estado
         state_after_devops = TrackingState(
             alumno_id=alumno_id,
             propuesta_confirmada=propuesta_confirmada,
             estado_repo=devops_res["estado_repo"],
-            evidencias=devops_res["evidencias"]
+            evidencias=devops_res["evidencias"],
+            github_context=devops_res.get("github_context") or {},
+            backlog_scrum=backlog_scrum,
         )
 
-        # ── Nodo 2: Competencias ──
+        # ── Nodo 2: Competencias + mapeo Kanban sincero ──
         actualizar_proyecto(proyecto_id, {
             "tracking_active_agent": "ag_comp",
             "tracking_progress": 50,
-            "tracking_detail": "Agente de Competencias validando commits y asociándolos a hitos académicos..."
+            "tracking_detail": "Agente de Competencias cruzando commits y código con hitos y Kanban..."
         })
         comp_res = await competency_node(state_after_devops)
+        estado_repo_comp = comp_res.get("estado_repo") or state_after_devops.estado_repo
         state_after_comp = TrackingState(
             alumno_id=alumno_id,
             propuesta_confirmada=propuesta_confirmada,
-            estado_repo=state_after_devops.estado_repo,
+            estado_repo=estado_repo_comp,
             evidencias=state_after_devops.evidencias,
-            reporte_competencias=comp_res["reporte_competencias"]
+            reporte_competencias=comp_res["reporte_competencias"],
+            github_context=state_after_devops.github_context,
+            backlog_scrum=backlog_scrum,
         )
 
         # ── Nodo 3: Analista de Integridad ──
@@ -298,40 +307,88 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
             historial = []
         historial.append(nuevo_historico)
 
-        # ── AUTO-COMPLETAR TAREAS DEL KANBAN/BACKLOG SCRUM BASADO EN COMMITS ──
-        backlog_scrum = project.get("backlog_scrum", {})
-        mapeo_ai = comp_res.get("mapeo_tareas", {}) if "comp_res" in locals() and isinstance(comp_res.get("mapeo_tareas"), dict) else {}
-        
-        if backlog_scrum and "epicas" in backlog_scrum:
-            for epica in backlog_scrum["epicas"]:
-                if "items" in epica:
-                    for item in epica["items"]:
-                        item_id = item.get("id", "")
-                        
-                        # 1. Intentar autocompletar por mapeo semántico de la IA primero
-                        if item_id in mapeo_ai:
-                            item["estado"] = mapeo_ai[item_id]
-                            print(f"[AUTO-KANBAN-AI] Tarea {item_id} marcada como {mapeo_ai[item_id]} por análisis semántico de IA.")
-                            continue
+        # ── AUTO-KANBAN: aplica mapeo IA (código+commits) y fallback por evidencia ──
+        VALID_KANBAN = {"backlog", "todo", "in_progress", "done"}
+        RANK = {"backlog": 0, "todo": 1, "in_progress": 2, "done": 3}
+        mapeo_ai = comp_res.get("mapeo_tareas", {}) if isinstance(comp_res.get("mapeo_tareas"), dict) else {}
+        kanban_updates = {}
+        repo_configured = bool(repo_url)
+        demo_configured = bool(demo_url)
 
-                        # 2. Fallback de detección por coincidencia de texto
+        def _boost_entregable_done(titulo: str, quiero: str, estado: str) -> str:
+            """Si el entregable ya está configurado, no dejar ítems GitHub/deploy en in_progress."""
+            text = f"{titulo} {quiero}".lower()
+            github_keys = (
+                "github", "repositorio", "repo", "vincular mi cuenta",
+                "conectar mi perfil", "obtener repositorios", "api de github",
+            )
+            deploy_keys = ("despliegue", "produccion", "producción", "deploy", "vercel", "demo")
+            if repo_configured and any(k in text for k in github_keys) and estado in ("todo", "in_progress", "backlog"):
+                return "done"
+            if demo_configured and any(k in text for k in deploy_keys) and estado in ("todo", "in_progress", "backlog"):
+                return "done"
+            return estado
+
+        if backlog_scrum and isinstance(backlog_scrum.get("epicas"), list):
+            for epica in backlog_scrum["epicas"]:
+                for item in epica.get("items") or []:
+                    item_id = item.get("id", "")
+                    if not item_id:
+                        continue
+                    prev = item.get("estado") or "backlog"
+                    nuevo = None
+
+                    if item_id in mapeo_ai and mapeo_ai[item_id] in VALID_KANBAN:
+                        nuevo = mapeo_ai[item_id]
+                        print(f"[AUTO-KANBAN-AI] {item_id}: {prev} → {nuevo}")
+                    else:
+                        # Fallback: commits que mencionan id/título o traen item_ids
                         match_id = item_id.lower()
-                        match_titulo = item.get("titulo", "").lower()
-                        rel_commits = []
+                        match_titulo = (item.get("titulo") or "").lower()
+                        rel = []
                         if result.estado_repo and result.estado_repo.commits:
                             for c in result.estado_repo.commits:
-                                msg = c.mensaje.lower()
-                                if match_id and match_id in msg or (len(match_titulo) > 5 and match_titulo in msg):
-                                    rel_commits.append(c)
-                        
-                        if rel_commits:
-                            all_alineados = all(getattr(c, "alineado", True) for c in rel_commits)
-                            if all_alineados:
-                                item["estado"] = "done"
-                                print(f"[AUTO-KANBAN-TEXT] Tarea {item_id} marcada como DONE basada en concordancia de texto.")
+                                msg = (c.mensaje or "").lower()
+                                ids = getattr(c, "item_ids", None) or []
+                                if item_id in ids or (match_id and match_id in msg) or (
+                                    len(match_titulo) > 5 and match_titulo in msg
+                                ):
+                                    rel.append(c)
+                        if rel:
+                            alineados = [c for c in rel if getattr(c, "alineado", True)]
+                            con_archivos = [c for c in rel if getattr(c, "files_changed", None)]
+                            if alineados and (con_archivos or len(alineados) >= 1):
+                                nuevo = "done"
+                            elif alineados:
+                                nuevo = "in_progress"
                             else:
-                                item["estado"] = "in_progress"
-                                print(f"[AUTO-KANBAN-TEXT] Tarea {item_id} marcada como IN_PROGRESS por concordancia de texto.")
+                                nuevo = "todo"
+                            print(f"[AUTO-KANBAN-EVIDENCIA] {item_id}: {prev} → {nuevo}")
+
+                    if nuevo and nuevo in VALID_KANBAN:
+                        boosted = _boost_entregable_done(
+                            item.get("titulo") or "",
+                            item.get("quiero") or "",
+                            nuevo,
+                        )
+                        if boosted != nuevo:
+                            print(f"[AUTO-KANBAN-BOOST] {item_id}: {nuevo} → {boosted} (entregable configurado)")
+                            nuevo = boosted
+                        from_ai = item_id in mapeo_ai
+                        if from_ai or RANK.get(nuevo, 0) >= RANK.get(prev, 0):
+                            item["estado"] = nuevo
+                            kanban_updates[item_id] = nuevo
+                    else:
+                        # Aunque la IA no mapee, boost por entregables ya guardados
+                        boosted = _boost_entregable_done(
+                            item.get("titulo") or "",
+                            item.get("quiero") or "",
+                            prev,
+                        )
+                        if boosted != prev:
+                            print(f"[AUTO-KANBAN-BOOST] {item_id}: {prev} → {boosted} (entregable configurado)")
+                            item["estado"] = boosted
+                            kanban_updates[item_id] = boosted
         
         # Serializar resultados a Firestore
         tracking_data = {
@@ -348,6 +405,8 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
                 result.estado_repo.model_dump() if result.estado_repo else None
             ),
             "evidencias": [e.model_dump() for e in result.evidencias],
+            "mapeo_tareas": mapeo_ai,
+            "kanban_updates": kanban_updates,
         }
         try:
             actualizar_proyecto(proyecto_id, {
@@ -360,7 +419,7 @@ async def run_tracking_task(proyecto_id: str, alumno_id: str):
             print(f"[ERROR] Error al guardar tracking en Firestore: {db_err}")
             raise
 
-        print(f"[OK] Tracking {proyecto_id} completado.")
+        print(f"[OK] Tracking {proyecto_id} completado. Kanban updates: {len(kanban_updates)}")
 
     except Exception as e:
         print(f"[ERROR] Error en tracking task: {e}")
@@ -486,6 +545,7 @@ async def get_tracking_status(proyecto_id: str):
         "proyectoId": proyecto_id,
         "tracking_status": tracking_status,
         "tracking": tracking_data,
+        "backlog_scrum": project.get("backlog_scrum"),
         "tracking_active_agent": project.get("tracking_active_agent", "ag_devops"),
         "tracking_progress": project.get("tracking_progress", 0),
         "tracking_detail": project.get("tracking_detail", "Cargando análisis..."),
@@ -1027,9 +1087,11 @@ async def run_backlog_audit_task(proyecto_id: str, backlog_raw: str, backlog_sou
         result_dict = await graph.ainvoke(initial_state)
         result = BacklogAuditState(**result_dict)
 
-        # Serializar y guardar en Firestore
+        # Solo reporte docente — NUNCA escribe backlog_scrum / Kanban del alumno
         audit_data = {
             "audit_status": "error" if result.error else "completed",
+            "modo": "solo_reporte",
+            "afecta_kanban_alumno": False,
             "semaforo": result.semaforo.value if result.semaforo else "rojo",
             "porcentaje_correspondencia": result.porcentaje_correspondencia,
             "audit_results": [r.model_dump() for r in result.audit_results],
@@ -1041,7 +1103,10 @@ async def run_backlog_audit_task(proyecto_id: str, backlog_raw: str, backlog_sou
         }
 
         actualizar_proyecto(proyecto_id, {"backlog_audit": audit_data})
-        print(f"[BACKLOG-AUDIT] Auditoría {proyecto_id} completada. Semáforo: {result.semaforo}")
+        print(
+            f"[BACKLOG-AUDIT] Auditoría {proyecto_id} completada. "
+            f"Semáforo: {result.semaforo} (solo reporte, Kanban intacto)"
+        )
 
     except Exception as e:
         print(f"[BACKLOG-AUDIT-ERROR] {e}")

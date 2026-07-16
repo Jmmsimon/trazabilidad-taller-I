@@ -24,6 +24,8 @@ export function useProfesor() {
   const [motivo, setMotivo] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisMessage, setAnalysisMessage] = useState("");
+  const [analysisActiveAgent, setAnalysisActiveAgent] = useState<string | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
   const [loadingAprobar, setLoadingAprobar] = useState(false);
@@ -118,55 +120,70 @@ export function useProfesor() {
   };
 
   const pollTracking = useCallback(async (projId: string) => {
-    let secondsElapsed = 0;
-    const messages = [
-      "Iniciando análisis asíncrono...",
-      "Leyendo repositorio Git y commits...",
-      "Extrayendo evidencias y entregables...",
-      "Evaluando competencias adquiridas...",
-      "Calculando métricas de integridad...",
-      "Generando diagnósticos de riesgo de IA..."
-    ];
-
     const check = async () => {
       try {
-        const msgIdx = Math.min(Math.floor(secondsElapsed / 3.5), messages.length - 1);
-        setAnalysisMessage(messages[msgIdx]);
-        secondsElapsed += 2.5;
-
         const res = await fetch(`/api/proyectos/${projId}/tracking/status`);
         if (!res.ok) {
           setIsAnalyzing(false);
           setAnalysisMessage("");
+          setAnalysisActiveAgent(null);
+          setAnalysisProgress(0);
+          setToast({ type: "error", message: "No se pudo consultar el estado del análisis." });
           return;
         }
         const data = await res.json();
-        if (data.tracking_status === "completed") {
-          if (selectedId) fetchDetalle(selectedId);
-          setIsAnalyzing(false);
-          setAnalysisMessage("");
-          return;
-        } else if (data.tracking_status === "error") {
-          setIsAnalyzing(false);
-          setAnalysisMessage("");
+
+        if (data.tracking_status === "processing") {
+          setAnalysisActiveAgent(data.tracking_active_agent || "ag_devops");
+          setAnalysisProgress(Number(data.tracking_progress) || 0);
+          setAnalysisMessage(data.tracking_detail || "Analizando repositorio y backlog...");
+          setTimeout(check, 2500);
           return;
         }
+
+        if (data.tracking_status === "completed") {
+          if (selectedId) await fetchDetalle(selectedId);
+          setIsAnalyzing(false);
+          setAnalysisMessage("");
+          setAnalysisActiveAgent(null);
+          setAnalysisProgress(100);
+          setToast({
+            type: "success",
+            message: "Análisis completado. Datos del proyecto actualizados (también visibles para el estudiante).",
+          });
+          return;
+        }
+
+        if (data.tracking_status === "error") {
+          setIsAnalyzing(false);
+          setAnalysisMessage("");
+          setAnalysisActiveAgent(null);
+          setAnalysisProgress(0);
+          setToast({ type: "error", message: "El análisis falló. Intenta de nuevo." });
+          return;
+        }
+
         setTimeout(check, 2500);
       } catch {
         setIsAnalyzing(false);
         setAnalysisMessage("");
+        setAnalysisActiveAgent(null);
+        setAnalysisProgress(0);
+        setToast({ type: "error", message: "Error de conexión durante el análisis." });
       }
     };
     check();
   }, [selectedId, fetchDetalle]);
 
-  // Re-analizar DevOps
+  // Re-analizar con agentes sincerados (mismo pipeline que estudiante)
   const handleReAnalizar = async () => {
     if (!detalle) return;
     setIsAnalyzing(true);
-    setAnalysisMessage("Iniciando análisis asíncrono...");
+    setAnalysisActiveAgent("ag_devops");
+    setAnalysisProgress(10);
+    setAnalysisMessage("Iniciando agentes sincerados (lectura profunda del repo)...");
     try {
-      await fetch(`/api/proyectos/${detalle.proyectoId}/tracking/iniciar`, {
+      const res = await fetch(`/api/proyectos/${detalle.proyectoId}/tracking/iniciar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -174,11 +191,17 @@ export function useProfesor() {
           proyectoId: detalle.proyectoId,
         }),
       });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       pollTracking(detalle.proyectoId);
     } catch (e) {
       console.error("Error al iniciar análisis:", e);
       setIsAnalyzing(false);
       setAnalysisMessage("");
+      setAnalysisActiveAgent(null);
+      setAnalysisProgress(0);
+      setToast({ type: "error", message: "No se pudo iniciar el análisis." });
     }
   };
 
@@ -389,6 +412,8 @@ export function useProfesor() {
     setMotivo,
     isAnalyzing,
     analysisMessage,
+    analysisActiveAgent,
+    analysisProgress,
     loadingAprobar,
     loadingRechazar,
     isArchiving,

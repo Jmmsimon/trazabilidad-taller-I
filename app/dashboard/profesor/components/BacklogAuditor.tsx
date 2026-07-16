@@ -220,9 +220,20 @@ function AuditItemRow({ item }: { item: AuditItemResult }) {
 
 
 
-export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAuditorProps) {
-  const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+function formatApiError(payload: unknown, status: number): string {
+  if (!payload || typeof payload !== "object") return `HTTP ${status}`;
+  const err = payload as { detail?: unknown; error?: unknown };
+  const detail = err.detail ?? err.error;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => (typeof d === "object" && d && "msg" in d ? String((d as { msg: string }).msg) : String(d)))
+      .join("; ");
+  }
+  return `HTTP ${status}`;
+}
 
+export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAuditorProps) {
   const [inputMode, setInputMode] = useState<"csv" | "notion">("csv");
   const [csvText, setCsvText] = useState("");
   const [notionUrl, setNotionUrl] = useState("");
@@ -236,17 +247,20 @@ export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAud
   const [errorMsg, setErrorMsg] = useState<string | null>(initialAudit?.error || null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sync initialAudit when changing projects
   useEffect(() => {
     setAuditStatus(initialAudit?.audit_status || "not_started");
-    setResult((initialAudit?.audit_status === "completed" || initialAudit?.audit_status === "error") ? initialAudit : null);
+    setResult(
+      initialAudit?.audit_status === "completed" || initialAudit?.audit_status === "error"
+        ? initialAudit
+        : null
+    );
     setErrorMsg(initialAudit?.error || null);
-  }, [proyectoId]); // Only reset when the project changes
+  }, [proyectoId]); // reset al cambiar de proyecto
 
   const startPolling = useCallback(() => {
     const poll = async () => {
       try {
-        const res = await fetch(`${API}/profesor/proyectos/${proyectoId}/backlog-audit/status`);
+        const res = await fetch(`/api/profesor/proyectos/${proyectoId}/backlog-audit/status`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: AuditResult = await res.json();
         setResult(data);
@@ -261,12 +275,20 @@ export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAud
     };
     poll();
     pollingRef.current = setInterval(poll, 3500);
-  }, [API, proyectoId]);
+  }, [proyectoId]);
 
   const handleFile = (file: File) => {
+    if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+      setErrorMsg("Por ahora sube CSV (exporta Excel como CSV UTF-8). El .xlsx no se lee directamente.");
+      return;
+    }
     const reader = new FileReader();
-    reader.onload = (e) => setCsvText((e.target?.result as string) ?? "");
-    reader.readAsText(file, "utf-8");
+    reader.onload = (e) => {
+      const text = (e.target?.result as string) ?? "";
+      setCsvText(text.replace(/^\uFEFF/, ""));
+      setErrorMsg(null);
+    };
+    reader.readAsText(file, "UTF-8");
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -299,18 +321,19 @@ export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAud
     }
 
     try {
-      const res = await fetch(`${API}/profesor/proyectos/${proyectoId}/backlog-audit`, {
+      const res = await fetch(`/api/profesor/proyectos/${proyectoId}/backlog-audit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail ?? `HTTP ${res.status}`);
+        throw new Error(formatApiError(payload, res.status));
       }
       startPolling();
-    } catch (e: any) {
-      setErrorMsg(e.message ?? "Error al iniciar la auditoría.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Error al iniciar la auditoría.";
+      setErrorMsg(message);
       setAuditStatus("error");
     }
   };
@@ -335,13 +358,17 @@ export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAud
           animate={{ opacity: 1, y: 0 }}
           className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5"
         >
-          <div>
+          <div className="space-y-2">
             <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
               <FileText className="w-4 h-4 text-indigo-500" />
               Auditoría de Avances — Semáforo de Progreso
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Sube el backlog del alumno y el agente comparará su código GitHub ítem a ítem.
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              Sube el backlog (CSV/Notion) y el agente sincerado compara ítem a ítem con el código del repo.
+            </p>
+            <p className="text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 font-semibold">
+              Solo reporte docente: no modifica el Kanban ni el dashboard del estudiante.
+              El Kanban lo actualiza el botón Analizar (tracking compartido).
             </p>
           </div>
 
@@ -389,8 +416,10 @@ export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAud
                     <p className="text-xs font-semibold text-slate-600">
                       Arrastra tu CSV aquí o haz clic para seleccionarlo
                     </p>
-                    <p className="text-[10px] text-slate-400">
-                      Columnas: titulo, tipo, estado, sprint — separadas por , o ;
+                    <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+                      CSV UTF-8. Columnas: id, titulo, tipo, estado, sprint
+                      <br />
+                      Estados: To Do / Por Hacer / In Progress / Done / Hecho — separador , o ;
                     </p>
                   </>
                 )}
@@ -483,18 +512,17 @@ export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAud
             </div>
           </div>
           <div className="text-center">
-            <p className="font-bold text-slate-700">Auditando avances del estudiante...</p>
+            <p className="font-bold text-slate-700">Auditoría sincerada en curso...</p>
             <p className="text-xs text-slate-400 mt-1">
-              El agente está leyendo el backlog y el repositorio GitHub completo
+              Parseo CSV → lectura profunda del repo → match ítem↔código → semáforo
             </p>
           </div>
           <div className="flex flex-col gap-2 w-full max-w-xs">
             {[
-              "Parseando backlog del alumno...",
-              "Leyendo árbol de archivos GitHub...",
-              "Leyendo snippets de código...",
-              "Analizando con IA (Claude)...",
-              "Calculando semáforo de progreso...",
+              "Parseando backlog (CSV/Notion)...",
+              "Leyendo árbol y snippets de GitHub...",
+              "Cruzando cada ítem con evidencia real...",
+              "Calculando semáforo y desviaciones...",
             ].map((step, i) => (
               <div key={i} className="flex items-center gap-2 text-xs text-slate-500">
                 <Loader2 className="w-3 h-3 animate-spin text-indigo-400 shrink-0" />
@@ -502,6 +530,9 @@ export function BacklogAuditor({ proyectoId, repoUrl, initialAudit }: BacklogAud
               </div>
             ))}
           </div>
+          <p className="text-[10px] text-slate-400 font-medium">
+            Esto no altera el Kanban del alumno.
+          </p>
         </motion.section>
       )}
 
