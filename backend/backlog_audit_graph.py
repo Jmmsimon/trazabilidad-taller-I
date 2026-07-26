@@ -26,6 +26,7 @@ from backlog_parser import parse_backlog
 from tracking_graph import fetch_github_data
 from prompts import BACKLOG_AUDIT_PROMPT
 from llm_client import ask_claude, clean_json_response
+from semaforo import calcular_color_semaforo
 
 
 # ── Nodo 1: Parser del Backlog ─────────────────────────────────────────
@@ -227,26 +228,19 @@ async def semaforo_node(state: BacklogAuditState) -> Dict:
     """Calcula el color del semáforo según el porcentaje de correspondencia."""
     print("[AUDIT-4] Calculando semáforo...")
 
-    if state.error:
-        return {"semaforo": SemaforoColor.ROJO}
+    bulk = bool(state.code_summary and state.code_summary.bulk_commit_risk)
+    if bulk:
+        print(
+            f"[AUDIT-4] Bulk-commit detectado → penalización -15%. "
+            f"% base: {state.porcentaje_correspondencia:.1f}%"
+        )
 
-    pct = state.porcentaje_correspondencia
-
-    # Ajuste por bulk-commit: si hay riesgo, reducir el porcentaje efectivo
-    if state.code_summary and state.code_summary.bulk_commit_risk:
-        pct = max(0.0, pct - 15.0)
-        print(f"[AUDIT-4] Bulk-commit detectado → penalización -15%. % efectivo: {pct:.1f}%")
-
-    if pct >= 81:
-        color = SemaforoColor.VERDE
-    elif pct >= 56:
-        color = SemaforoColor.AMARILLO
-    elif pct >= 31:
-        color = SemaforoColor.NARANJA
-    else:
-        color = SemaforoColor.ROJO
-
-    print(f"[AUDIT-4] Semáforo: {color.value} ({pct:.1f}%)")
+    color = calcular_color_semaforo(
+        state.porcentaje_correspondencia,
+        bulk_commit_risk=bulk,
+        hay_error=bool(state.error),
+    )
+    print(f"[AUDIT-4] Semáforo: {color.value} ({state.porcentaje_correspondencia:.1f}%)")
     return {"semaforo": color}
 
 

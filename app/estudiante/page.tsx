@@ -16,15 +16,34 @@ function GoogleIcon() {
   );
 }
 
+// ─── Regex de validaciones ───────────────────────────────────────────────────
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+const EMAIL_ALLOWED_CHARS = /^[a-zA-Z0-9._%+\-@]$/;
+
+export function validateEmail(val: string) {
+  if (!val.trim()) return "El correo electrónico es obligatorio.";
+  if (!EMAIL_REGEX.test(val.trim())) return "Ingresa un correo electrónico válido (ej. usuario@dominio.com).";
+  return null;
+}
+
+export function validatePassword(val: string) {
+  if (!val) return "La contraseña es obligatoria.";
+  if (val.length < 6) return "La contraseña debe tener al menos 6 caracteres.";
+  return null;
+}
+
 export default function EstudianteLoginPage() {
   const { user, rol, loading, loginGoogle, loginWithEmail, logout } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // Email and password states
+  // Form states & validation
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errEmail, setErrEmail] = useState<string | null>(null);
+  const [errPassword, setErrPassword] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ email: false, password: false });
 
   useEffect(() => {
     if (!loading && user) {
@@ -36,6 +55,36 @@ export default function EstudianteLoginPage() {
       }
     }
   }, [user, rol, loading, router, logout]);
+
+  // ── Handlers Correo ──
+  const handleEmailChange = (val: string) => {
+    const clean = val.split("").filter((ch) => EMAIL_ALLOWED_CHARS.test(ch)).join("");
+    setEmail(clean);
+    if (touched.email) setErrEmail(validateEmail(clean));
+  };
+
+  const handleEmailBlur = () => {
+    setTouched((t) => ({ ...t, email: true }));
+    setErrEmail(validateEmail(email));
+  };
+
+  const handleEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key.length > 1 || e.ctrlKey || e.metaKey) return;
+    if (!EMAIL_ALLOWED_CHARS.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  // ── Handlers Contraseña ──
+  const handlePasswordChange = (val: string) => {
+    setPassword(val);
+    if (touched.password) setErrPassword(validatePassword(val));
+  };
+
+  const handlePasswordBlur = () => {
+    setTouched((t) => ({ ...t, password: true }));
+    setErrPassword(validatePassword(password));
+  };
 
   const handleGoogleLogin = async () => {
     setError(null);
@@ -59,6 +108,14 @@ export default function EstudianteLoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const eEmail = validateEmail(email);
+    const ePassword = validatePassword(password);
+    setErrEmail(eEmail);
+    setErrPassword(ePassword);
+    setTouched({ email: true, password: true });
+
+    if (eEmail || ePassword) return;
+
     setError(null);
     setIsSigningIn(true);
     try {
@@ -77,6 +134,8 @@ export default function EstudianteLoginPage() {
       setIsSigningIn(false);
     }
   };
+
+  const isFormInvalid = !!validateEmail(email) || !!validatePassword(password);
 
   if (loading || (user && rol === "estudiante")) {
     return (
@@ -144,7 +203,8 @@ export default function EstudianteLoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleEmailLogin} noValidate className="space-y-4">
+            {/* ── Email Field ── */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">
                 Correo Electrónico
@@ -152,16 +212,30 @@ export default function EstudianteLoginPage() {
               <div className="relative">
                 <Mail className="absolute left-4 top-3.5 h-4 w-4 text-zinc-600" />
                 <input
+                  id="email-student"
                   type="email"
                   required
                   placeholder="alumno@institucion.edu.pe"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-zinc-950/60 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-zinc-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder:text-zinc-700"
+                  onChange={(e) => handleEmailChange(e.target.value)}
+                  onBlur={handleEmailBlur}
+                  onKeyDown={handleEmailKeyDown}
+                  className={`w-full bg-zinc-950/60 border rounded-xl py-3 pl-11 pr-4 text-zinc-200 text-xs sm:text-sm focus:outline-none focus:ring-2 transition-colors placeholder:text-zinc-700 ${
+                    errEmail
+                      ? "border-red-500/80 focus:ring-red-500/30"
+                      : "border-zinc-800 focus:ring-indigo-500/50"
+                  }`}
                 />
               </div>
+              {errEmail && (
+                <p className="flex items-center gap-1.5 text-xs text-red-400 font-medium mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  {errEmail}
+                </p>
+              )}
             </div>
 
+            {/* ── Password Field ── */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">
                 Contraseña
@@ -169,20 +243,33 @@ export default function EstudianteLoginPage() {
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 h-4 w-4 text-zinc-600" />
                 <input
+                  id="password-student"
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-950/60 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-zinc-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder:text-zinc-700"
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  onBlur={handlePasswordBlur}
+                  className={`w-full bg-zinc-950/60 border rounded-xl py-3 pl-11 pr-4 text-zinc-200 text-xs sm:text-sm focus:outline-none focus:ring-2 transition-colors placeholder:text-zinc-700 ${
+                    errPassword
+                      ? "border-red-500/80 focus:ring-red-500/30"
+                      : "border-zinc-800 focus:ring-indigo-500/50"
+                  }`}
                 />
               </div>
+              {errPassword && (
+                <p className="flex items-center gap-1.5 text-xs text-red-400 font-medium mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  {errPassword}
+                </p>
+              )}
             </div>
 
             <button
+              id="btn-login-student"
               type="submit"
-              disabled={isSigningIn}
-              className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg disabled:opacity-60 cursor-pointer text-sm"
+              disabled={isSigningIn || isFormInvalid}
+              className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
             >
               {isSigningIn && <Loader2 className="w-4 h-4 animate-spin" />}
               {isSigningIn ? "Iniciando Sesión..." : "Iniciar Sesión"}

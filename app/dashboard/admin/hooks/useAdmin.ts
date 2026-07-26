@@ -38,9 +38,43 @@ export function useAdmin() {
     fetchUsuarios();
   }, [fetchUsuarios]);
 
+  // ─── Validaciones del formulario de registro ────────────────────────────
+  const NOMBRE_REGEX = /^[a-zA-Z\u00C0-\u024F\u00f1\u00d1\s.'\-]+$/;
+  const EMAIL_REGEX  = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail) return;
+
+    // ── Validar correo ──────────────────────────────────────────────────────
+    if (!inviteEmail.trim()) {
+      setError("El correo electrónico es obligatorio.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(inviteEmail.trim())) {
+      setError("El correo electrónico no tiene un formato válido (ej. usuario@dominio.com).");
+      return;
+    }
+
+    // ── Validar nombre (opcional pero si se llena, solo letras) ────────────
+    if (inviteNombre.trim() && !NOMBRE_REGEX.test(inviteNombre.trim())) {
+      setError("El nombre solo puede contener letras y espacios. No se permiten números ni caracteres especiales.");
+      return;
+    }
+    if (inviteNombre.trim() && inviteNombre.trim().length < 2) {
+      setError("El nombre debe tener al menos 2 caracteres.");
+      return;
+    }
+
+    // ── Validar contraseña (opcional pero si se llena, mín. 6 caracteres) ──
+    if (invitePassword && invitePassword.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (invitePassword && invitePassword.length > 128) {
+      setError("La contraseña no puede superar los 128 caracteres.");
+      return;
+    }
+
     setInviting(true);
     setError(null);
     try {
@@ -48,14 +82,17 @@ export function useAdmin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: inviteEmail,
+          email: inviteEmail.trim(),
           rol: inviteRol,
-          nombre: inviteNombre || undefined,
+          nombre: inviteNombre.trim() || undefined,
           password: invitePassword || undefined,
         }),
       });
 
-      if (!res.ok) throw new Error("Fallo al invitar usuario");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.detail || "Fallo al invitar usuario");
+      }
 
       setInviteEmail("");
       setInviteNombre("");
@@ -65,11 +102,17 @@ export function useAdmin() {
 
       setSuccessMessage("Usuario pre-registrado correctamente.");
       setTimeout(() => setSuccessMessage(null), 4000);
-      
+
       fetchUsuarios();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("No se pudo pre-registrar al usuario.");
+      // Mensaje amigable para correo duplicado en Firebase
+      const msg: string = err?.message ?? "";
+      if (msg.includes("already") || msg.includes("duplicado") || msg.includes("exists")) {
+        setError("Este correo ya está registrado en el sistema.");
+      } else {
+        setError("No se pudo pre-registrar al usuario. Verifica los datos e inténtalo de nuevo.");
+      }
     } finally {
       setInviting(false);
     }

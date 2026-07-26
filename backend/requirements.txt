@@ -11,3 +11,4 @@ prisma
 firebase-admin==6.5.0
 langchain-google-genai
 reportlab
+pytest

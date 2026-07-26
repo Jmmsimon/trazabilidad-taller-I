@@ -58,22 +58,23 @@ def _normalize_estado(raw: str) -> str:
 def _normalize_tipo(raw: str) -> str:
     """Normaliza el tipo de ítem al código de dos letras estándar."""
     s = raw.strip().upper()
-    VALID = {"HU", "TA", "SP", "EN", "RN", "DO", "EP"}
+    VALID = {"HU", "TA", "SP", "EN", "RN", "DO", "EP", "AG"}
     if s in VALID:
-        return s
+        return "TA" if s == "AG" else s  # AG (agente/tarea técnica) → TA
     s_lower = raw.strip().lower()
-    if "historia" in s_lower or "user story" in s_lower or "hu" in s_lower:
+    # Palabras completas primero (evitar falsos positivos: "ta" en "habilitador")
+    if "historia" in s_lower or "user story" in s_lower or "h. usuario" in s_lower:
         return "HU"
-    if "tarea" in s_lower or "task" in s_lower or "ta" in s_lower:
-        return "TA"
-    if "spike" in s_lower or "investigac" in s_lower or "sp" in s_lower:
-        return "SP"
-    if "habilitador" in s_lower or "enabler" in s_lower or "en" in s_lower:
+    if "habilitador" in s_lower or "enabler" in s_lower:
         return "EN"
-    if "no func" in s_lower or "requisito" in s_lower or "rn" in s_lower:
+    if "spike" in s_lower or "investigac" in s_lower:
+        return "SP"
+    if "no func" in s_lower or "requisito" in s_lower:
         return "RN"
-    if "doc" in s_lower:
+    if "document" in s_lower or s_lower.startswith("doc"):
         return "DO"
+    if "tarea" in s_lower or "task" in s_lower or "técnica" in s_lower or "tecnica" in s_lower:
+        return "TA"
     return "HU"
 
 
