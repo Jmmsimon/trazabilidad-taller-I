@@ -1,0 +1,15 @@
+PRUEBA DE CARGA — Trazabilidad Académica API
+URL: http://127.0.0.1:8000/docs
+Usuarios concurrentes: 5
+Requests por usuario: 10
+Total requests: 50
+Duración: 0.13 s
+Throughput aprox: 373.00 req/s
+Éxitos: 50/50 (100.00%)
+Latencia media: 13.1 ms
+Latencia p95: 103.3 ms
+Códigos HTTP: {200: 50}
+
+Criterios:
+  éxito >= 99%: PASS
+  media < 500ms (local): PASS

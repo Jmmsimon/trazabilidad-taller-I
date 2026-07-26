@@ -294,32 +294,30 @@ export function InviteModal({
                   </p>
                 </div>
               ) : (
-                setInvitePassword && (
-                  <div className="space-y-1">
-                    <label className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                      Contraseña inicial <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="invite-password"
-                      type="password"
-                      placeholder="Mínimo 6 caracteres"
-                      value={invitePassword || ""}
-                      onChange={(e) => handlePasswordChange(e.target.value)}
-                      onBlur={handlePasswordBlur}
-                      className={`w-full bg-slate-50 border rounded-xl py-3 px-4 text-slate-800 text-sm focus:outline-none focus:ring-2 transition-colors ${
-                        errPassword
-                          ? "border-red-400 focus:ring-red-300/50"
-                          : "border-slate-200 focus:ring-indigo-500/50"
-                      }`}
-                    />
-                    {errPassword && (
-                      <p className="flex items-center gap-1.5 text-xs text-red-600 font-medium mt-1">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        {errPassword}
-                      </p>
-                    )}
-                  </div>
-                )
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                    Contraseña inicial <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="invite-password"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={invitePassword || ""}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    onBlur={handlePasswordBlur}
+                    className={`w-full bg-slate-50 border rounded-xl py-3 px-4 text-slate-800 text-sm focus:outline-none focus:ring-2 transition-colors ${
+                      errPassword
+                        ? "border-red-400 focus:ring-red-300/50"
+                        : "border-slate-200 focus:ring-indigo-500/50"
+                    }`}
+                  />
+                  {errPassword && (
+                    <p className="flex items-center gap-1.5 text-xs text-red-600 font-medium mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      {errPassword}
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* ── Rol ── */}

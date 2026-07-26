@@ -1,0 +1,3743 @@
+
+===== PAGE 1 =====
+UNIVERSIDAD PRIVADA ANTENOR ORREGO 
+FACULTAD DE INGENIERÍA 
+PROGRAMA DE ESTUDIO DE INGENIERÍA DE SISTEMAS E INTELIGENCIA 
+ARTIFICIAL 
+ 
+_____________________________________________________________________ 
+Sistema de Retroalimentación por Voz (SRV) basado en Inteligencia Artificial 
+para la evaluación y retroalimentación de la fluidez de oratoria en español 
+ 
+INFORME FINAL DE PROYECTO INTEGRADOR 
+ 
+AUTORES: 
+● Br. Lezcano Saavedra, Anthony 
+● Br. Arévalo Espinoza, Ramdhum 
+ 
+DOCENTE: 
+• Walter Cueva Chavez 
+ 
+TRUJILLO – PERÚ 
+2026
+
+===== PAGE 2 =====
+Resumen Ejecutivo 
+ 
+En la práctica de la oratoria, la evaluación de la fluidez oral depende en 
+gran medida de la percepción subjetiva del docente; en aulas de más de 25 
+estudiantes resulta inviable monitorear individualmente parámetros como el 
+ritmo, las pausas o la articulación. El presente proyecto desarrolla el Sistema de 
+Retroalimentación por Voz (SRV), una aplicación web que captura la voz del 
+estudiante, la procesa con modelos de inteligencia artificial y entrega una 
+retroalimentación formativa inmediata organizada en tr es dimensiones: fluidez 
+oral, vocabulario y coherencia, y expresividad vocal. 
+La solución integra reconocimiento automático del habla (faster-whisper), 
+análisis prosódico (Praat/parselmouth) y procesamiento de lenguaje natural en 
+español (spaCy y BETO), sobre una arquitectura cliente -servidor (React + 
+FastAPI + PostgreSQL/Supabase) desplegada sobre servicios en la nube de 
+bajo costo (Railway, Supabase y Vercel). El sistema calcula un puntaje global y 
+una calificación por estrellas, genera consejos de mejora, exporta reportes en 
+PDF y ofrece un panel para el docente con control de acceso por roles. Una 
+decisión central del diseño es el procesamiento local de la voz y su eliminación 
+inmediata, para proteger los datos de los usuarios. 
+Como resultado se obtuvo un sistema funcional que cubre prácticamente 
+la totalidad del backlog del producto (alrededor de 48 de 50 ítems), desplegado 
+y validado mediante pruebas de integración automatizadas. El aporte del 
+proyecto no radica en un nuevo alg oritmo, sino en la integración del estado del 
+arte en un segmento poco atendido (oratoria en español) de forma ética y de bajo 
+costo. 
+ 
+ 
+ 
+Palabras clave: retroalimentación por voz, fluidez oral, reconocimiento del habla, 
+Whisper, procesamiento de lenguaje natural, español, prosodia.
+
+===== PAGE 3 =====
+Contenido 
+ 
+Resumen Ejecutivo ................................ ................................ ................................ ....... 2 
+Índice de figuras ................................ ................................ ................................ ........... 7 
+Índice de Tablas ................................ ................................ ................................ ........... 8 
+1. Descripción del proyecto ................................ ................................ ........................... 9 
+1.1 Datos de la empresa, rubro empresarial o sector económico. ............................. 9 
+1.2 Alcance del proyecto ................................ ................................ ........................... 9 
+1.3 Objetivos ................................ ................................ ................................ ........... 10 
+1.3.1 Objetivo general ................................ ................................ .......................... 10 
+1.3.2 Objetivos específicos ................................ ................................ .................. 10 
+1.4 Justificación ................................ ................................ ................................ ....... 10 
+1.5 Exclusiones del proyecto ................................ ................................ ................... 11 
+1.6 Restricciones del proyecto ................................ ................................ ................ 11 
+1.7 Asunciones o supuestos ................................ ................................ .................... 11 
+2. Metodologías de gestión del producto................................ ................................ ..... 12 
+2.1 Revisión de marcos metodológicos ................................ ................................ ... 14 
+4.2 Selección del marco metodológico ................................ ................................ .... 12 
+4.3 Plan de desarrollo ................................ ................................ ............................. 16 
+3. Estudio de factibilidad y viabilidad ................................ ................................ ........... 17 
+3.1 Estudio de factibilidad................................ ................................ ........................ 17 
+3.1.1 Riesgos y mitigaciones ................................ ................................ ............... 18 
+3.2 Estudio económico ................................ ................................ ............................ 19 
+3.2.1 CAPEX (inversión inicial) ................................ ................................ ............ 19 
+3.2.2 OPEX (operación mensual) ................................ ................................ ........ 19 
+3.2.3 Análisis costo-beneficio ................................ ................................ ............... 20 
+4. Desarrollo del proyecto ................................ ................................ ........................... 21 
+4.1 Sprint 1 - Núcleo de infraestructura, audio y fluidez (D1) ................................ ... 22 
+4.2 Sprint 2 - Dimensiones D2/D3, panel docente, despliegue y cierre .................... 23
+
+===== PAGE 4 =====
+5. Resultados ................................ ................................ ................................ .............. 25 
+5.1 Evidencias visuales del sistema ................................ ................................ ........ 26 
+5.2 Casos de prueba ................................ ................................ ...............................  29 
+5.3 Estrategia integral de pruebas y resultados (Anexos I–N) ................................ . 33 
+6. Impacto social, ambiental y de seguridad ................................ ...............................  34 
+6.1 Indicadores de impacto (social, ambiental y de seguridad) ................................  35 
+6.2 Disponibilidad y confidencialidad ................................ ................................ ....... 37 
+6.3 Responsabilidad social corporativa (RSC), ODS y mejoras sostenibles ............ 38 
+7. Ética, transparencia y responsabilidad social ................................ .......................... 40 
+7.1 Prácticas de ética y transparencia ................................ ................................ ..... 40 
+7.2 Tratamiento de datos personales y decisiones técnicas ................................ .... 41 
+7.3 Impactos sociales identificados y acciones de mitigación ................................ .. 42 
+8. Conclusiones ................................ ................................ ................................ .......... 43 
+9. Recomendaciones ................................ ................................ ................................ .. 44 
+10. Referencias Bibliográficas ................................ ................................ ..................... 45 
+Anexos ................................ ................................ ................................ ....................... 46 
+Anexo I — Pruebas Unitarias (caja blanca) ................................ ................................ . 47 
+Anexo J — Pruebas de Funcionalidad / Integracion de la API ................................ .... 54 
+Anexo K — Pruebas de Caja Negra ................................ ................................ ............ 59 
+Anexo L — Pruebas End-to-End (E2E) ................................ ................................ ....... 79 
+Anexo M — Pruebas de Capacidad y Rendimiento (Apache JMeter) ......................... 89 
+Anexo N — Matriz de Casos de Uso ................................ ................................ ............. 1 
+N.1 Matriz resumen de casos de prueba ................................ ................................ ... 1 
+N.2 Detalle de los casos de prueba ................................ ................................ ........... 4 
+Caso de Prueba 1 ................................ ................................ ................................ .. 4 
+Caso de Prueba 2 ................................ ................................ ................................ .. 6 
+Caso de Prueba 3 ................................ ................................ ................................ .. 8 
+Caso de Prueba 4 ................................ ................................ ................................  11 
+Caso de Prueba 5 ................................ ................................ ................................  13
+
+===== PAGE 5 =====
+Caso de Prueba 6 ................................ ................................ ................................  15 
+Caso de Prueba 7 ................................ ................................ ................................  17 
+Caso de Prueba 8 ................................ ................................ ................................  19
+
+===== PAGE 6 =====
+Característica Cascada (Tradicional) Scrum (Ágil) 
+Enfoque Secuencial y estructurado Iterativo e 
+incremental 
+ 
+Planifica
+ción  
+ 
+Planifica
+ción por 
+Sprints 
+ 
+Planificación por 
+Sprints 
+Flexibilidad Baja (difícil cambiar requisitos) Alta (se adapta al 
+cambio) 
+Documentación Extensa Ligera, pero 
+necesaria 
+Participación cliente Limitada Constante 
+Entregas parciales No Sí, en cada Sprint 
+Ideal para Requisitos muy claros y estables Proyectos con 
+requisitos cambiantes
+
+===== PAGE 7 =====
+Índice de figuras 
+Figura 1 Ciclo de vida de Scrum y plan de dos sprints. ................................ .............. 13 
+Figura 2 Avance del Product Backlog por categoría de ítems. ................................ ... 15 
+Figura 3 Distribución de story points por sprint. ................................ .......................... 17 
+Figura 4 Costo mensual (OPEX) por servicio contratado. ................................ .......... 20 
+Figura 5 Composición porcentual del OPEX mensual. ................................ ............... 20 
+Figura 6 Arquitectura general del sistema SRV por capas (cliente–servidor). ............ 22 
+Figura 7 Flujo del pipeline de procesamiento de audio y evaluación. ......................... 23 
+Figura 8 Ponderación del puntaje global de desempeño (D1, D2, D3). ...................... 23 
+Figura 9 Indicadores de resultado del proyecto. ................................ ......................... 25 
+Figura 10 Pantallas de registro e inicio de sesión de usuario. ................................ .... 26 
+Figura 11 Pantalla de inicio: selección del modo de práctica (Lectura o Expresión 
+libre). ................................ ................................ ................................ .......................... 26 
+Figura 12 Modo lectura: selección del texto guía y práctica de lectura en voz alta. .... 26 
+Figura 13 Modo de expresión libre sobre un tema propuesto. ................................ .... 27 
+Figura 14 Resultado de una sesión: onda de audio y puntaje global con estrellas. .... 27 
+Figura 15 Detalle de resultados por dimensión de análisis. ................................ ........ 27 
+Figura 16 Reporte de sesión exportable en PDF con métricas y recomendaciones. .. 28 
+Figura 17 Historial del usuario con gráficos de progreso por dimensión. .................... 28 
+Figura 18 Panel del docente: listado de estudiantes con su promedio y prácticas. .... 28 
+Figura 19 Panel del docente: detalle del historial de un estudiante. ........................... 29
+
+===== PAGE 8 =====
+Índice de Tablas 
+Tabla 1 Datos generales del producto. ................................ ................................ ......... 9 
+Tabla 2 Objetivos específicos e indicadores de logro. ................................ ................ 10 
+Tabla 3 Revisión comparativa de marcos metodológicos. ................................ .......... 12 
+Tabla 4 Plan de desarrollo por sprints. ................................ ................................ ....... 16 
+Tabla 5 Épicas del Product Backlog y su estado de avance. ................................ ...... 15 
+Tabla 6 Resumen general de cumplimiento del backlog. ................................ ............ 15 
+Tabla 7 Trazabilidad: objetivos del Charter → ítems del backlog. ...............................  15 
+Tabla 8 Estudio de factibilidad multidimensional. ................................ ........................ 17 
+Tabla 9 Riesgos del proyecto y sus mitigaciones. ................................ ...................... 18 
+Tabla 10 CAPEX — inversión inicial del proyecto. ................................ ...................... 19 
+Tabla 11 OPEX — costos operativos mensuales. ................................ ...................... 19 
+Tabla 12 Resumen de resultados del sistema. ................................ ........................... 25 
+Tabla 13 Resumen de la matriz de casos de prueba por módulo. ..............................  29 
+Tabla 14 Detalle de los casos de prueba ejecutados (evidencia real). ........................ 30 
+Tabla 15 Resumen de la estrategia de pruebas del SRV. ................................ .......... 33 
+Tabla 16 Indicadores verificables de impacto social, ambiental y de seguridad. ......... 35 
+Tabla 17 Mecanismos de disponibilidad y confidencialidad implementados. .............. 37 
+Tabla 18 Alineación con marcos de RSC/ODS y mejoras sostenibles propuestas. .... 38 
+Tabla 19 Prácticas de ética y transparencia implementadas. ................................ ..... 40 
+Tabla 20 Tratamiento de datos personales (dato, finalidad y protección). .................. 41 
+Tabla 21 Impactos sociales identificados y acciones de mitigación. ........................... 42
+
+===== PAGE 9 =====
+1. Descripción del proyecto 
+1.1 Datos de la empresa, rubro empresarial o sector económico. 
+Tabla 1 
+Datos generales del producto. 
+Aspecto Detalle 
+Producto SRV – Sistema de Retroalimentación 
+por Voz (aplicación web) 
+Modalidad Aplicación web accesible desde un 
+navegador moderno 
+Sector Oratoria y comunicación oral en 
+español 
+Usuarios destinatarios Estudiantes de español de habla 
+hispana y sus docentes 
+ 
+1.2 Alcance del proyecto 
+El proyecto comprende el diseño, desarrollo, implementación y despliegue 
+de una aplicación web de retroalimentación por voz orientada a evaluar y mejorar 
+las habilidades de expresión oral de los usuarios. La solución incorpora 
+funcionalidades como autentic ación segura y gestión de usuarios, captura y 
+procesamiento de audio directamente desde el navegador, análisis automatizado 
+de la fluidez del habla (velocidad de pronunciación, pausas y prosodia), 
+evaluación del vocabulario empleado, la coherencia y estructura del discurso, así 
+como el análisis de la expresividad vocal mediante características relacionadas 
+con la entonación y el énfasis.  
+Además, el sistema calcula un puntaje global de desempeño, genera 
+recomendaciones personalizadas para fortalecer las competencias 
+comunicativas, permite la generación de reportes en formato PDF, mantiene un 
+historial de evaluaciones con gráficos de progres o para el seguimiento del 
+rendimiento a lo largo del tiempo y dispone de un panel administrativo para el 
+docente con control de acceso basado en roles, facilitando la supervisión, gestión 
+y monitoreo de los estudiantes.
+
+===== PAGE 10 =====
+1.3 Objetivos 
+1.3.1 Objetivo general 
+Construir un sistema de retroalimentación por voz basado en inteligencia 
+artificial que evalúe de forma objetiva la fluidez de oratoria en hablantes de 
+español y entregue retroalimentación formativa inmediata 
+1.3.2 Objetivos específicos 
+Tabla 2 
+Objetivos específicos e indicadores de logro. 
+Objetivo Descripción Indicador / meta 
+OD1 Implementar un motor de ingesta y 
+transporte de audio de alta fidelidad que 
+muestre la onda en tiempo real e inicie 
+la transcripción con baja latencia. 
+Onda en tiempo real; 
+inicio de transcripción 
+con baja latencia 
+OD2 Desarrollar la lógica algorítmica de 
+análisis prosódico y léxico para evaluar 
+la precisión de reconocimiento (WER) y 
+detectar las pausas del discurso. 
+Precisión de 
+reconocimiento (WER); 
+detección de pausas 
+OD3 Diseñar un módulo de gestión de datos 
+y visualización formativa que vincule las 
+sesiones al perfil del usuario y presente 
+el progreso. 
+100 % de sesiones 
+vinculadas 
+correctamente al perfil 
+del usuario 
+ 
+1.4 Justificación 
+La retroalimentación docente en oratoria suele ser global y diferida, lo que 
+impide que el usuario corrija sus disfluencias en el momento preciso y consolida 
+hábitos de pronunciación inexacta. Un sistema automatizado proporciona una 
+medición objetiva y con sistente, reduce el sesgo perceptivo del evaluador y 
+ofrece a cada estudiante un laboratorio de práctica personalizada. Además,
+
+===== PAGE 11 =====
+genera evidencia del progreso a lo largo del tiempo, útil tanto para el estudiante 
+como para el docente. 
+ 
+1.5 Exclusiones del proyecto 
+• Corrección gramatical o sintáctica del discurso (no se evalúa la 
+'corrección' del contenido). 
+• Integración con sistemas oficiales del MINEDU (p. ej. SIAGIE). 
+• Soporte para dispositivos de gama baja sin Web Audio API. 
+• Entrenamiento de modelos de IA propios desde cero (se usan modelos 
+preentrenados). 
+ 
+1.6 Restricciones del proyecto 
+• Equipo de dos integrantes y plazo académico definido (dos sprints). 
+• Presupuesto limitado: uso de servicios en la nube en planes de pago 
+mínimos (bajo costo). 
+• Cómputo sin GPU (procesamiento en CPU), lo que condiciona la latencia. 
+• Protección estricta de datos personales (privacidad por diseño), por 
+tratarse de una herramienta dirigida a usuarios. 
+ 
+1.7 Asunciones o supuestos 
+• El entorno de uso cuenta con conexión a internet y equipos con navegador 
+moderno y micrófono. 
+• Se cuenta con la autorización correspondiente para el uso de la aplicación 
+por parte de los usuarios. 
+• Los estudiantes usan la aplicación de forma voluntaria y supervisada.
+
+===== PAGE 12 =====
+2. Metodología de gestión del producto (Scrum) 
+2.1 Selección del marco metodológico 
+Tabla 3 
+Revisión comparativa de marcos metodológicos. 
+Marco Características Pertinencia para el 
+proyecto 
+Scrum Iterativo por sprints, roles 
+definidos, entregables 
+incrementales 
+Alta: permite entregar el 
+sistema por incrementos 
+(D1, luego D2/D3) 
+XP (Extreme 
+Programming) 
+Prácticas técnicas intensivas 
+(TDD, integración continua) 
+Media: se adoptan pruebas 
+e integración continua, no 
+el marco completo 
+Se adoptó Scrum como marco de gestión del producto por su carácter 
+iterativo e incremental, adecuado para entregar el sistema en incrementos 
+funcionales (primero la dimensión D1 y luego D2 y D3). El trabajo se organizó en 
+dos sprints con roles, artefactos y ceremonias definidos, y se complementó con 
+prácticas de ingeniería como la integración continua y las pruebas automatizadas 
+mediante GitHub. 
+2.2 Roles y equipo Scrum 
+El equipo, conformado por dos integrantes, asumió los roles definidos por 
+Scrum, adaptándolos al tamaño reducido del equipo. A continuación se detallan 
+los roles y sus responsabilidades. 
+Tabla 4 
+Roles y responsabilidades del equipo Scrum. 
+Rol Integrante Responsabilidades 
+principales 
+Product Owner Br. Anthony Lezcano 
+Saavedra 
+Define y prioriza el Product 
+Backlog; valida los 
+incrementos y representa 
+las necesidades del 
+usuario y del docente.
+
+===== PAGE 13 =====
+Scrum Master Br. Ramdhum Arévalo 
+Espinoza 
+Facilita las ceremonias, 
+remueve impedimentos y 
+vela por la correcta 
+aplicación del marco 
+Scrum. 
+Equipo de 
+Desarrollo 
+Ambos integrantes Diseñan, construyen y 
+prueban el incremento en 
+cada sprint; se 
+autoorganizan para 
+cumplir el objetivo del 
+sprint. 
+2.3 Ciclo de vida y ceremonias de Scrum 
+El ciclo de vida de Scrum se estructuró en eventos iterativos, tal como 
+ilustra la Figura 1. Cada sprint inició con la Sprint Planning, incorporó el Daily 
+Scrum para la sincronización diaria y cerró con la Sprint Review y la Sprint 
+Retrospective. 
+ 
+Figura 1 
+Ciclo de vida de Scrum y plan de dos sprints. 
+Tabla 5 
+Ceremonias de Scrum ejecutadas en el proyecto. 
+Ceremonia Propósito Cadencia y evidencia
+
+===== PAGE 14 =====
+Sprint Planning Definir el objetivo del sprint y 
+seleccionar los ítems del 
+Sprint Backlog. 
+Al inicio de cada sprint; 
+actas de planificación. 
+Daily Scrum Sincronizar el avance diario e 
+identificar impedimentos. 
+Diaria (15 min); registro de 
+avances e impedimentos. 
+Sprint Review Inspeccionar el incremento y 
+recoger retroalimentación. 
+Al cierre de cada sprint; 
+demostración y aceptación 
+de HU. 
+Sprint 
+Retrospective 
+Reflexionar sobre el proceso y 
+acordar mejoras. 
+Al cierre de cada sprint; 
+acuerdos de mejora. 
+2.4 Artefactos de Scrum: Product Backlog e Incremento 
+Los artefactos de Scrum aportaron transparencia y organizaron el trabajo 
+del equipo a lo largo del proyecto, desde la definición del alcance hasta la entrega 
+de cada incremento. 
+Tabla 6 
+Artefactos de Scrum y su evidencia en el proyecto. 
+Artefacto Descripción Evidencia en el informe 
+Product Backlog Lista priorizada de Historias 
+de Usuario y Tareas Técnicas 
+agrupadas en cuatro épicas. 
+Épicas y estado del 
+backlog (tablas de esta 
+sección). 
+Sprint Backlog Subconjunto de ítems 
+comprometidos en cada sprint 
+con su objetivo. 
+Plan de desarrollo por 
+sprints (Sección 2.5). 
+Incremento Producto potencialmente 
+entregable al final de cada 
+sprint. 
+Sistema desplegado y 
+resultados (Sección 5). 
+El producto se organizó en 4 épicas (EP -01 a EP -04) que agrupan 28 
+Historias de Usuario y 22 Tareas Técnicas (50 ítems, ~190 puntos de historia). 
+A continuación, se documenta el detalle del Product Backlog. El producto 
+agrupa 28 Historias de Usuario (HU) y 22 Tareas Técnicas (TA) en cuatro épicas 
+temáticas, con un total de 189 story points distribuidos en dos sprints.
+
+===== PAGE 15 =====
+Tabla 7 
+Épicas del Product Backlog y su estado de avance. 
+Épica Foco funcional HU / TA Estado 
+EP-01 Plataforma, autenticación e 
+infraestructura 
+5 / 8 Completo (1 
+TA no aplica) 
+EP-02 Captura de audio y análisis de 
+fluidez (D1) 
+6 / 5 Completo 
+EP-03 Análisis léxico-semántico y 
+prosódico (D2/D3) 
+4 / 3 Completo 
+EP-04 Retroalimentación, historial y panel 
+docente 
+13 / 6 Completo (1 
+HU pendiente) 
+Tabla 8 
+Resumen general de cumplimiento del backlog. 
+Categoría Total Completado Pendiente No 
+aplica 
+Historias de 
+Usuario (HU) 
+28 27 1 0 
+Tareas Técnicas 
+(TA) 
+22 21 0 1 
+TOTAL 50 48 1 1 
+ 
+Figura 2 
+Avance del Product Backlog por categoría de ítems. 
+Tabla 9 
+Trazabilidad: objetivos del Charter → ítems del backlog.
+
+===== PAGE 16 =====
+Objetivo Ítems clave Cumplimiento técnico 
+OD1 HU-04, HU-05, TA-
+004, TA-005 
+PyAV + faster -whisper; onda en tiempo 
+real; análisis por lotes. 
+OD2 HU-05, HU-06, HU-28, 
+TA-005 
+Whisper medium; WER estimado con 
+Levenshtein; detección de pausas. 
+OD3 HU-11, HU-12, HU-13, 
+TA-003 
+SQLAlchemy + ensure_schema; historial 
+vinculado al perfil. 
+OE1 HU-08, HU-17, HU-19, 
+HU-20, HU-25 
+D1 (reglas) → D2 (spaCy+BETO) → D3 
+(Praat) → puntaje → IA generativa. 
+OE2 HU-03, HU-04, HU-08, 
+HU-09, HU-10 
+SPA React  amigable; botones grandes; 
+TTS; señal visual de grabación. 
+OE3 HU-21, HU-22, HU-23, 
+TA-020 
+RBAC por rol JWT; exportación PDF; 
+vista por estudiante. 
+OF1 HU-24, TA-017, TA-
+018, TA-019 
+Railway + Supabase + Vercel; planes de 
+pago mínimos. 
+2.5 Plan de desarrollo por sprints 
+Tabla 10 
+Plan de desarrollo por sprints. 
+Sprint Foco Resultado principal 
+Sprint 1 Infraestructura, autenticación, 
+captura/procesamiento de 
+audio y fluidez (D1) 
+Arquitectura base, 
+pipeline de audio y 
+análisis de fluidez 
+mecánica 
+Sprint 2 Vocabulario (D2), expresividad 
+(D3), puntaje global, panel 
+docente, despliegue y cierre 
+Sistema completo 
+desplegado con las tres 
+dimensiones y reportes
+
+===== PAGE 17 =====
+Figura 3 
+Distribución de story points por sprint. 
+3. Estudio de factibilidad y viabilidad 
+3.1 Estudio de factibilidad 
+Tabla 11 
+Estudio de factibilidad multidimensional. 
+Dimensión Análisis 
+Técnica 
+Viable: tecnologías maduras y de 
+código abierto (FastAPI, faster -
+whisper, Praat, spaCy/BETO, React). 
+Ejecución en CPU. 
+Legal 
+Viable: cumplimiento de la protección 
+de datos personales mediante 
+procesamiento local y audio efímero 
+(privacidad por diseño). 
+Organizacional 
+Viable: equipo de dos integrantes con 
+roles definidos (Project Manager y 
+Scrum Master). 
+Operativa 
+Viable: aplicación web accesible 
+desde el navegador; uso voluntario y 
+supervisado por el docente.
+
+===== PAGE 18 =====
+Recursos humanos 
+Dos estudiantes de Ingeniería de 
+Sistemas e IA con roles definidos; 
+asesoría del docente. 
+Ambiental 
+Impacto bajo: solución de software; 
+sin hardware especializado de alto 
+consumo. 
+Riesgos 
+Ruido ambiental, conectividad, WER 
+en voz en español y límites de 
+memoria en despliegue (ver 
+mitigaciones). 
+ 
+ 
+ 
+3.1.1 Riesgos y mitigaciones 
+Tabla 12 
+Riesgos del proyecto y sus mitigaciones. 
+Riesgo Mitigación 
+Ruido ambiental del entorno Filtros de audio (paso-alto + puerta de 
+ruido) y micrófonos cardioides. 
+Conectividad limitada Aplicación web ligera; modelo de 
+procesamiento por lotes. 
+WER elevado en voz en español Modelo Whisper 'medium' en español 
+y medición/validación del WER. 
+Límite de memoria en despliegue PyTorch CPU -only y 
+dimensionamiento del modelo según 
+el plan. 
+Datos personales sensibles Procesamiento local y audio efímero 
+(privacidad por diseño). 
+3.1.2 Conclusión de la factibilidad 
+El análisis multidimensional confirma que el proyecto es viable en los planos 
+técnico, legal, organizacional, operativo, de recursos humanos y ambiental. Las
+
+===== PAGE 19 =====
+tecnologías empleadas son maduras y de código abierto, el tratamiento de datos cumple 
+el principio de privacidad por diseño, el equipo cuenta con roles definidos y la operación 
+en la nube es de bajo costo. Los riesgos identificados disponen de mitigaciones  
+concretas (numeral 3.1.1), por lo que no comprometen la ejecución del proyecto. 
+3.2 Estudio económico 
+El proyecto se apoya en servicios gestionados en la nube. Aunque todos 
+ofrecen planes gratuitos, el equipo contrató los planes de pago mínimos para 
+asegurar estabilidad, capacidad de cómputo y disponibilidad durante el 
+desarrollo y las pruebas: Railway (Hobby) para el backend, Supabase (Pro) para 
+la base de datos y Vercel (Pro) para el frontend. A ello se suman las 
+suscripciones de inteligencia artificial empleadas por el equipo; Claude Pro, para 
+los consejos generativos, y Google AI Pro con 2 TB, para el acceso a Gemini ;  
+contratadas por los dos integrantes. El costo operativo mensual resultante es 
+moderado (alrededor de S/ 443) y se detalla a continuación. 
+3.2.1 CAPEX (inversión inicial) 
+Tabla 13 
+CAPEX — inversión inicial del proyecto. 
+Concepto Importe (S/) 
+Micrófonos de diadema (cancelación 
+de ruido) x25 
+800.00 
+Suministros (cables, adaptadores 
+USB) 
+100.00 
+Papelería y material de oficina 40.00 
+Total CAPEX 940.00 
+3.2.2 OPEX (operación mensual) 
+Tabla 14 
+OPEX — costos operativos mensuales. 
+Concepto Importe (S/) 
+Claude Pro — IA generativa de consejos (2 × US$ 
+20.00) 
+136.40 
+Google AI Pro 2 TB — Gemini (2 × US$ 19.99) 136.33
+
+===== PAGE 20 =====
+Supabase Pro — base de datos gestionada (US$ 
+25.00) 
+85.25 
+Vercel Pro — hosting del frontend (US$ 20.00) 68.20 
+Railway Hobby — hosting del backend (US$ 5.00) 17.05 
+Total OPEX mensual (US$ 129.98) 443.23 
+ 
+Figura 4 
+Costo mensual (OPEX) por servicio contratado. 
+ 
+Figura 5 
+Composición porcentual del OPEX mensual. 
+ 
+3.2.3 Análisis costo-beneficio
+
+===== PAGE 21 =====
+Por tratarse de una solución de uso educativo sin flujo de ingresos, los 
+indicadores VAN y TIR no son aplicables en sentido financiero estricto. El 
+beneficio principal es cualitativo: reducción de la subjetividad en la evaluación, 
+ahorro de horas de evalua ción manual del docente (estimado en S/ 500 por su 
+valor de tiempo) y generación de evidencia de progreso. La relación costo -
+beneficio es favorable dado el bajo costo de operación.  El costo recurrente 
+documentado (aproximadamente S/ 443 mensuales, unos S/ 886 durante los dos 
+sprints) resulta bajo frente al ahorro de horas de evaluación docente y a la capacidad de 
+inteligencia artificial que habilita. 
+ 
+ 
+ 
+ 
+ 
+4. Desarrollo del proyecto 
+El desarrollo siguió el plan de dos sprints definido en el numeral 4.3, sobre 
+la arquitectura cliente -servidor descrita en el Anexo de Documentación de 
+Arquitectura.
+
+===== PAGE 22 =====
+Figura 6 
+Arquitectura general del sistema SRV por capas (cliente–servidor). 
+ 
+4.1 Sprint 1 - Núcleo de infraestructura, audio y fluidez (D1) 
+• Autenticación segura con JWT y hashing Argon2; registro y validación 
+de datos (DTOs). 
+• Captura de audio en el navegador con visualización de onda en tiempo 
+real (WaveSurfer). 
+• Conversión de audio a WAV 16 kHz (PyAV) y transcripción con faster-
+whisper. 
+• Cálculo de velocidad de habla (PPM), detección de pausas/bloqueos 
+y prosodia con Praat. 
+• Persistencia de sesiones y resultados en base de datos; historial del 
+usuario.
+
+===== PAGE 23 =====
+Figura 7 
+Flujo del pipeline de procesamiento de audio y evaluación. 
+4.2 Sprint 2 - Dimensiones D2/D3, panel docente, despliegue y cierre 
+• Detección de muletillas y riqueza léxica (TTR) con spaCy; coherencia 
+semántica con BETO. 
+• Evaluación de expresividad vocal (variación tonal y calidad) como 
+proxy acústico. 
+• Puntaje global ponderado (0.4·D1 + 0.35·D2 + 0.25·D3) y calificación 
+por estrellas. 
+ 
+Figura 8 
+Ponderación del puntaje global de desempeño (D1, D2, D3). 
+• Modo lectura con fidelidad por distancia de Levenshtein.
+
+===== PAGE 24 =====
+• Filtros anti-ruido, reportes en PDF, gráficos de progreso (Chart.js) y 
+consejos. 
+• Control de acceso por roles (RBAC) y panel del docente. 
+• Consejos con IA generativa (Claude Haiku) de forma opcional, 
+enviando solo métricas numéricas. 
+• Despliegue en Railway, Supabase y Vercel; pruebas de integración 
+automatizadas.
+
+===== PAGE 25 =====
+5. Resultados 
+Se obtuvo un sistema web funcional y desplegado que implementa las 
+tres dimensiones de análisis y la totalidad del flujo de retroalimentación. 
+Respecto al backlog del producto (50 ítems), se completaron alrededor de 48; 
+las dos tareas de infraestructura pr evistas para AWS y migraciones se 
+sustituyeron por alternativas equivalentes (Railway/Supabase y una micro -
+migración propia). 
+Tabla 15 
+Resumen de resultados del sistema. 
+Indicador Resultado 
+Ítems del backlog cumplidos ~48 de 50 
+Dimensiones de análisis 3 (Fluidez, Vocabulario/Coherencia, 
+Expresividad) 
+Pruebas de integración 28 pruebas automatizadas (cobertura 
+~71%) 
+Reportes Exportación PDF por sesión. 
+Seguridad JWT + Argon2 + RBAC 
+(usuario/docente) 
+Despliegue Backend (Railway), BD (Supabase), 
+Frontend (Vercel) 
+ 
+Figura 9 
+Indicadores de resultado del proyecto.
+
+===== PAGE 26 =====
+Respecto a los objetivos: la visualización de la onda es en tiempo real 
+(OD1) y la integridad de datos sesión -perfil se cumple al 100% (OD3). La meta 
+de WER < 10% (OD2) queda sujeta a verificación durante la operación del 
+sistema en condiciones reales de uso. 
+5.1 Evidencias visuales del sistema 
+Las siguientes capturas evidencian el funcionamiento del sistema 
+desplegado en sus principales flujos de uso: autenticación, práctica de oratoria 
+en sus dos modos, resultados por dimensión, reportes y panel del docente. 
+ 
+Figura 10 
+Pantallas de registro e inicio de sesión de usuario. 
+ 
+Figura 11 
+Pantalla de inicio: selección del modo de práctica (Lectura o Expresión libre). 
+ 
+Figura 12 
+Modo lectura: selección del texto guía y práctica de lectura en voz alta.
+
+===== PAGE 27 =====
+Figura 13 
+Modo de expresión libre sobre un tema propuesto. 
+ 
+Figura 14 
+Resultado de una sesión: onda de audio y puntaje global con estrellas. 
+ 
+Figura 15 
+Detalle de resultados por dimensión de análisis.
+
+===== PAGE 28 =====
+Figura 16 
+Reporte de sesión exportable en PDF con métricas y recomendaciones. 
+ 
+Figura 17 
+Historial del usuario con gráficos de progreso por dimensión. 
+ 
+Figura 18 
+Panel del docente: listado de estudiantes con su promedio y prácticas.
+
+===== PAGE 29 =====
+Figura 19 
+Panel del docente: detalle del historial de un estudiante. 
+5.2 Casos de prueba 
+Se diseñó y ejecutó una matriz de 25 casos de prueba funcionales, 
+agrupados en cinco módulos, complementada con una suite de 28 pruebas de 
+integración automatizadas (pytest ) que alcanzó una cobertura aproximada del 
+71%. La ejecución fue realizada por los autores sobre el sistema desplegado, 
+registrando para cada caso el resultado obtenido, la severidad asociada y las 
+observaciones correspondientes. La Tabla 16 resume el resultado por módulo y 
+la Tabla 17 presenta el detalle de los 25 casos ejecutados, con evidencia real; 
+los pasos, datos de entrada y resultados esperados de cada caso se incluyen en 
+el Anexo G. 
+Tabla 16 
+Resumen de la matriz de casos de prueba por módulo. 
+Módulo Casos de uso cubiertos N.º casos Resultado 
+1 · Seguridad / 
+Acceso 
+Registro, validación DTO, 
+login JWT, RBAC 
+5 Conforme 
+2 · Audio / ASR 
+Captura, WAV 16 kHz, filtros 
+anti-ruido, permisos 
+5 Conforme 
+3 · D1 – Fluidez 
+PPM, pausas/bloqueos, 
+prosodia (Praat) 
+5 Conforme 
+4 · D2/D3 – NLP 
+y Voz 
+TTR, muletillas, coherencia 
+BETO, expresividad 
+5 Conforme
+
+===== PAGE 30 =====
+5 · Resultados / 
+Reportes 
+Puntaje ponderado, PDF, 
+gráficos, panel docente 
+5 Conforme 
+Total 
+25 casos funcionales + 28 
+pruebas de integración 
+25 ≈71% cob. 
+ 
+ 
+De los 25 casos ejecutados, todos alcanzaron un resultado PASE; no 
+obstante, la ejecución con datos reales permitió registrar tres observaciones 
+menores que no afectan la funcionalidad central del sistema, pero que se 
+recomienda atender: (1) en el caso 1.5 , el bloqueo de acceso por rol funciona 
+correctamente, aunque no existe una redirección explícita al intentar ingresar al 
+panel del docente sin permisos; (2) en el caso 2.4, los filtros anti-ruido no fueron 
+validados en escenarios de ruido de alta intensidad; y (3) en el caso 5.5, el panel 
+del docente expone, además de las métricas numéricas previstas, la 
+transcripción y la valoración de la sesión, por lo que se recomienda acotar la 
+información remitida conforme al principio de minimización de datos. La Tabla 17 
+detalla el resultado, la severidad y las observaciones registradas para cada caso. 
+Tabla 17 
+Detalle de los casos de prueba ejecutados (evidencia real). 
+N.º Caso de uso Módulo 
+Severi
+dad 
+Result
+ado 
+Observaciones 
+1.1 
+Registro de usuario con 
+datos válidos 
+Seguridad / 
+Acceso 
+ALTO PASE — 
+1.2 
+Validación de registro 
+con datos inválidos 
+Seguridad / 
+Acceso 
+ALTO PASE — 
+1.3 
+Inicio de sesión con 
+credenciales válidas 
+(JWT) 
+Seguridad / 
+Acceso 
+ALTO PASE — 
+1.4 
+Inicio de sesión con 
+credenciales inválidas 
+Seguridad / 
+Acceso 
+ALTO PASE — 
+1.5 
+Control de acceso por 
+roles 
+Seguridad / 
+Acceso 
+ALTO PASE 
+El bloqueo de acceso 
+cumple, pero no existe 
+una redirección 
+explícita al intentar
+
+===== PAGE 31 =====
+ingresar al panel sin 
+permisos. 
+2.1 
+Captura de audio y 
+onda en tiempo real 
+Audio / 
+ASR 
+ALTO PASE — 
+2.2 
+Conversión a WAV 16 
+kHz y transcripción 
+(faster-whisper) 
+Audio / 
+ASR 
+ALTO PASE — 
+2.3 
+Manejo de audio sin voz 
+/ silencio 
+Audio / 
+ASR 
+MEDIO PASE — 
+2.4 
+Aplicación de filtros anti-
+ruido 
+Audio / 
+ASR 
+ALTO PASE 
+No validado en 
+escenarios de ruido 
+intenso; en el resto de 
+condiciones cumple sin 
+observaciones. 
+2.5 
+Permiso de micrófono 
+denegado 
+Audio / 
+ASR 
+MEDIO PASE — 
+3.1 
+Cálculo de velocidad de 
+habla (PPM) 
+D1 – 
+Fluidez 
+ALTO PASE — 
+3.2 
+Detección de pausas y 
+bloqueos 
+D1 – 
+Fluidez 
+ALTO PASE — 
+3.3 
+Análisis prosódico con 
+Praat (F0, jitter, 
+shimmer) 
+D1 – 
+Fluidez 
+ALTO PASE — 
+3.4 
+Cálculo del subpuntaje 
+de la Dimensión 1 
+D1 – 
+Fluidez 
+ALTO PASE — 
+3.5 
+Audio muy corto (caso 
+límite) 
+D1 – 
+Fluidez 
+MEDIO PASE — 
+4.1 
+Cálculo de riqueza 
+léxica (TTR) con spaCy 
+D2/D3 – 
+NLP y Voz 
+ALTO PASE — 
+4.2 Detección de muletillas 
+D2/D3 – 
+NLP y Voz 
+ALTO PASE — 
+4.3 
+Coherencia semántica 
+con BETO 
+D2/D3 – 
+NLP y Voz 
+ALTO PASE — 
+4.4 
+Evaluación de 
+expresividad vocal (D3) 
+D2/D3 – 
+NLP y Voz 
+ALTO PASE — 
+4.5 
+Discurso saturado de 
+muletillas (caso 
+negativo) 
+D2/D3 – 
+NLP y Voz 
+MEDIO PASE — 
+5.1 
+Puntaje global 
+ponderado y estrellas 
+Resultados 
+/ Reportes 
+ALTO PASE —
+
+===== PAGE 32 =====
+5.2 
+Modo lectura: fidelidad / 
+WER (Levenshtein) 
+Resultados 
+/ Reportes 
+MEDIO PASE — 
+5.3 
+Generación de reporte 
+en PDF 
+Resultados 
+/ Reportes 
+ALTO PASE — 
+5.4 
+Gráficos de progreso e 
+historial 
+Resultados 
+/ Reportes 
+MEDIO PASE — 
+5.5 
+Panel del docente y 
+consejos con IA 
+Resultados 
+/ Reportes 
+MEDIO PASE 
+Se exponen datos 
+adicionales 
+(transcripción y 
+valoración) además de 
+las métricas numéricas 
+previstas; se 
+recomienda acotar la 
+información enviada.
+
+===== PAGE 33 =====
+5.3 Estrategia integral de pruebas y resultados (Anexos I–N) 
+Ademas de la matriz funcional de casos de prueba descrita en la seccion 
+5.2, el proyecto ejecuto una bateria de pruebas en varios niveles —unitarias, de 
+integracion/funcionalidad de la API, de caja negra, end -to-end y de 
+capacidad/rendimiento— cuyos documentos c ompletos se incluyen en los 
+Anexos I a N. La Tabla 18 resume los tipos de prueba aplicados, su enfoque y 
+su resultado. 
+Tabla 18 
+Resumen de la estrategia de pruebas del SRV. 
+Tipo de 
+prueba 
+Herramienta / 
+Enfoque 
+Alcance Resultado Anexo de 
+respaldo 
+Pruebas 
+unitarias (caja 
+blanca) 
+pytest + pytest-
+cov 
+Logica pura del 
+backend: puntaje 
+global, fidelidad de 
+lectura, guards de 
+sesion, 
+determinismo del 
+scoring, reglas de 
+retroalimentacion y 
+seguridad de la IA 
+generativa 
+PASA Anexo I 
+Pruebas de 
+funcionalidad 
+/ integracion 
+de la API 
+pytest + FastAPI 
+TestClient 
+(httpx) 
+16 pruebas de 
+extremo a extremo 
+del servidor: 
+autenticacion, 
+control de acceso 
+por roles (RBAC), 
+analisis de audio e 
+historial/metricas 
+16/16 PASA Anexo J 
+Pruebas de 
+caja negra 
+Ejecucion sobre 
+la aplicacion 
+web (sin conocer 
+la 
+implementacion) 
+Comportamiento 
+externo: registro, 
+login, 
+practica/grabacion, 
+resultados, 
+historial y panel 
+PASE Anexo K
+
+===== PAGE 34 =====
+docente 
+(escenarios 
+validos, invalidos y 
+de limite) 
+Pruebas end-
+to-end (E2E) 
+Playwright 
+(navegador real, 
+microfono 
+simulado) 
+Flujo completo 
+frontend 
+(React+Vite) + 
+backend (FastAPI) 
+en navegador con 
+audio inyectado 
+Disenado 
+(pendiente de 
+automatizar) 
+Anexo L 
+Pruebas de 
+capacidad y 
+rendimiento 
+Apache JMeter 
+5.6.3 (modo no-
+GUI) 
+Carga concurrente 
+creciente sobre 
+login (5→30→60 
+VU) y analisis de 
+audio (3→6 VU) 
+en produccion 
+0 % de error Anexo M 
+Matriz de 
+casos de uso 
+Plantilla de 
+casos de prueba 
+(Sprints 1 y 2) 
+25 casos 
+funcionales en 11 
+modulos, con 
+detalle paso a 
+paso, datos y 
+resultado 
+25/25 PASE Anexo N 
+ 
+En las pruebas de capacidad, el inicio de sesion escalo hasta 60 usuarios 
+concurrentes con 0 % de error (media ≈ 686 ms y p95 ≈ 820 ms en caliente). El 
+analisis de audio —el componente mas costoso— tambien mantuvo 0 % de error, 
+pero su latencia media crecio de ≈ 21 s con 3 usuarios a ≈ 36 s con 6 usuarios, 
+evidenciando el limite de CPU del plan de hosting utilizado. El detalle completo, 
+con los tableros generados por JMeter, se incluye en el Anexo M. 
+ 
+6. Impacto social, ambiental y de seguridad 
+El Sistema de Retroalimentación por Voz (SRV) fue evaluado no solo en su 
+dimensión técnica, sino también por su impacto en las personas, el medio
+
+===== PAGE 35 =====
+ambiente y la seguridad de la información. Esta sección presenta indicadores 
+verificables de dicho impacto, los mecanismos de disponibilidad y 
+confidencialidad implementados, la alineación con marcos de responsabilidad 
+social corporativa y las mejoras sostenibles propuestas. 
+6.1 Indicadores de impacto (social, ambiental y de seguridad) 
+Se definieron indicadores verificables para cada dimensión de impacto, a partir 
+de las funcionalidades desplegadas y de las evidencias de las pruebas (Anexos 
+I a N). La Tabla 19 los resume. 
+Tabla 19 
+Indicadores verificables de impacto social, ambiental y de seguridad. 
+Dimensión Indicador verificable Evidencia / valor 
+Social Cobertura de evaluación 
+por docente 
+Un docente monitorea 
+métricas objetivas de 
+todos sus estudiantes 
+desde el panel, 
+superando el límite del 
+seguimiento manual en 
+aulas de más de 25 
+(panel docente, Anexo 
+N). 
+Social Equidad de acceso 
+(costo por estudiante) 
+S/ 0.00: aplicación web 
+gratuita que funciona en 
+cualquier navegador 
+estándar con micrófono. 
+Social Inmediatez de la 
+retroalimentación 
+Retroalimentación 
+formativa entregada en 
+segundos tras la 
+grabación, frente al 
+carácter diferido de la 
+evaluación tradicional.
+
+===== PAGE 36 =====
+Social Objetividad y reducción 
+de sesgo 
+Puntuación determinista 
+basada en reglas: 
+variabilidad nula entre 
+repeticiones idénticas 
+(prueba 
+test_determinismo.py, 
+Anexo I). 
+Ambiental Infraestructura sin 
+hardware dedicado 
+Despliegue 100 % en 
+servicios gestionados 
+(Railway, Supabase); 
+cero servidores físicos 
+propios. 
+Ambiental Cómputo sin GPU 
+permanente 
+Pipeline optimizado con 
+faster-whisper sobre 
+CPU; sin aceleradores 
+dedicados en operación 
+continua. 
+Ambiental Minimización de 
+almacenamiento 
+Audio efímero: el archivo 
+se elimina tras el 
+análisis; solo se 
+persisten métricas 
+numéricas. 
+Ambiental Escalado eficiente Planes de bajo consumo 
+(Hobby) y arquitectura 
+que permite escalar a 
+cero en inactividad. 
+Seguridad Autenticación robusta JWT + hashing Argon2; 
+las contraseñas nunca 
+se almacenan en claro 
+(test_auth.py, Anexo J). 
+Seguridad Control de acceso por 
+roles (RBAC) 
+Rechazo de peticiones 
+sin token (401) y por rol 
+insuficiente (403),
+
+===== PAGE 37 =====
+verificado en 
+test_rbac.py (Anexo J). 
+Seguridad Validación de entradas DTOs validados en el 
+backend; rechazo de 
+datos malformados 
+(pruebas de caja negra, 
+Anexo K). 
+Seguridad Robustez bajo carga 0 % de error con hasta 
+60 usuarios 
+concurrentes (Apache 
+JMeter, Anexo M). 
+Seguridad Cifrado en tránsito Comunicación sobre 
+HTTPS/TLS en el 
+despliegue de 
+producción. 
+ 
+6.2 Disponibilidad y confidencialidad 
+La solución implementa múltiples mecanismos para garantizar la disponibilidad 
+del servicio y la confidencialidad de los datos de los usuarios, según se detalla 
+en la Tabla 20. 
+Tabla 20 
+Mecanismos de disponibilidad y confidencialidad implementados. 
+Propiedad Mecanismo 
+implementado 
+Evidencia 
+Disponibilidad Servicios gestionados 
+con planes de pago 
+(Railway Hobby, 
+Supabase) 
+Estabilidad y capacidad 
+de cómputo aseguradas 
+durante desarrollo, 
+pruebas y operación. 
+Disponibilidad Base de datos 
+gestionada con 
+Persistencia de 
+sesiones y resultados 
+sin pérdida de datos.
+
+===== PAGE 38 =====
+respaldos automáticos 
+(PostgreSQL/Supabase) 
+Disponibilidad Comprobación de 
+resiliencia bajo carga 
+0 % de error hasta 60 
+usuarios concurrentes 
+en login (Anexo M). 
+Confidencialidad Hashing Argon2 de 
+contraseñas + JWT 
+Credenciales nunca 
+almacenadas ni 
+transmitidas en claro. 
+Confidencialidad Privacidad por diseño y 
+minimización de datos 
+Solo se recogen los 
+datos estrictamente 
+necesarios. 
+Confidencialidad Audio efímero El audio se elimina tras 
+el análisis; no se 
+persiste en ningún 
+medio. 
+Confidencialidad Control de acceso por 
+roles (RBAC) y TLS 
+Aislamiento de datos por 
+usuario/rol y cifrado en 
+tránsito. 
+ 
+6.3 Responsabilidad social corporativa (RSC), ODS y mejoras sostenibles 
+El proyecto se enmarca en la norma ISO 26000 de Responsabilidad Social y 
+contribuye a los Objetivos de Desarrollo Sostenible (ODS) de la Agenda 2030 de 
+la ONU, en particular el ODS 4 (Educación de calidad), el ODS 9 (Industria, 
+innovación e infraestructura) y el ODS 10 (Reducción de las desigualdades). La 
+Tabla 21 detalla esta alineación y las mejoras sostenibles propuestas. 
+Tabla 21 
+Alineación con marcos de RSC/ODS y mejoras sostenibles propuestas. 
+Marco / ODS Contribución del SRV Mejora sostenible 
+propuesta 
+ISO 26000 — 
+Participación y 
+Herramienta educativa 
+gratuita que fortalece 
+Convenio de 
+mantenimiento con la
+
+===== PAGE 39 =====
+desarrollo de la 
+comunidad 
+competencias 
+comunicativas en una 
+I.E. rural (Lancones, 
+Piura). 
+I.E. y banco de textos 
+administrable por el 
+docente para asegurar 
+la continuidad. 
+ODS 4 — Educación de 
+calidad 
+Retroalimentación 
+formativa objetiva e 
+inmediata que 
+complementa la labor 
+del docente. 
+Modo lectura con textos 
+locales y guías 
+descargables para uso 
+con conectividad 
+intermitente. 
+ODS 9 — Innovación e 
+infraestructura 
+Integración de 
+tecnologías open-source 
+maduras en una 
+arquitectura de bajo 
+costo. 
+Optimización del 
+pipeline de audio (caché 
+de modelos y 
+procesamiento por lotes) 
+para reducir el consumo 
+de CPU y energía. 
+ODS 10 — Reducción 
+de desigualdades 
+Acceso a evaluación de 
+oratoria antes ligada a 
+contextos con recurso 
+docente especializado. 
+Diseño responsivo y 
+bajo consumo de ancho 
+de banda para equipos y 
+redes modestas. 
+Sostenibilidad 
+económica y ambiental 
+Uso de planes 
+gratuitos/mínimos y 
+software libre. 
+Política de datos 
+mínimos (audio efímero) 
+y escalado a cero en 
+inactividad para 
+minimizar costo y huella. 
+Las mejoras sostenibles propuestas —optimización del pipeline de audio, 
+escalado a cero en inactividad, banco de textos reutilizable y diseño responsivo 
+de bajo consumo — son viables con la arquitectura actual y no requieren 
+inversión adicional significativa.
+
+===== PAGE 40 =====
+7. Ética, transparencia y responsabilidad social 
+El desarrollo del SRV se rigió por estándares globales de ética y transparencia 
+aplicados a lo largo de todo el ciclo de vida del software, desde el diseño hasta 
+el despliegue. Esta sección documenta las prácticas verificables adoptadas, el 
+tratamiento de los datos y las decisiones técnicas, así como los impactos 
+sociales identificados y sus acciones de mitigación. 
+7.1 Prácticas de ética y transparencia 
+Se implementaron al menos cinco prácticas verificables de ética y transparencia, 
+resumidas en la Tabla 22. 
+Tabla 22 
+Prácticas de ética y transparencia implementadas. 
+Práctica Descripción Evidencia verificable 
+Privacidad por diseño y 
+minimización de datos 
+Solo se recogen los 
+datos imprescindibles; el 
+audio es efímero. 
+Diseño de la base de 
+datos; prueba de 
+seguridad y privacidad 
+test_ia.py (Anexo I). 
+Procesamiento local del 
+audio 
+El audio se procesa en el 
+propio servidor del 
+sistema y no se envía a 
+servicios de terceros. 
+Arquitectura del pipeline 
+(faster-whisper y Praat 
+locales). 
+Transparencia 
+algorítmica 
+(explicabilidad) 
+La puntuación se basa 
+en reglas explícitas y 
+documentadas, no en 
+una caja negra. 
+Justificaciones técnicas 
+(Anexo D) y reglas de 
+scoring (Anexos I y J). 
+Consentimiento y 
+comunicación clara 
+Se informa al usuario 
+sobre qué se procesa y 
+con qué fin antes de 
+grabar. 
+Flujo de la interfaz de 
+práctica (Anexo N). 
+Apertura del código y de 
+las decisiones 
+Código en repositorio 
+público y decisiones 
+técnicas documentadas. 
+Anexo A (GitHub) y 
+Anexo D.
+
+===== PAGE 41 =====
+Seguridad como 
+práctica ética 
+Autenticación fuerte y 
+control de acceso para 
+proteger a los usuarios. 
+Pruebas test_auth.py y 
+test_rbac.py (Anexo J). 
+7.2 Tratamiento de datos personales y decisiones técnicas 
+El tratamiento de los datos sigue el principio de minimización: se recogen 
+únicamente los datos necesarios para el servicio, se protegen mediante cifrado 
+y control de acceso, y el audio no se conserva. Las decisiones técnicas que 
+sustentan este tratamiento están documentadas en el Anexo D (Justificaciones 
+del Charter) y en la documentación de arquitectura (Anexo C). La Tabla 23 
+resume el ciclo de vida de cada dato. 
+Tabla 23 
+Tratamiento de datos personales (dato, finalidad y protección). 
+Dato Finalidad Protección / retención 
+Nombre, apellido y 
+usuario 
+Identificación del 
+estudiante o docente 
+Almacenados en base 
+de datos gestionada; 
+acceso restringido por 
+rol. 
+Contraseña Autenticación Hash Argon2; nunca en 
+claro; no recuperable. 
+Audio de la grabación Análisis de fluidez en el 
+momento 
+Efímero: se elimina tras 
+el análisis; no se 
+persiste. 
+Métricas y puntajes Historial y seguimiento 
+del progreso 
+Datos numéricos sin 
+contenido sensible, 
+asociados al usuario. 
+Sesión (token JWT) Mantener la sesión 
+autenticada 
+Token firmado con 
+caducidad; transmitido 
+bajo TLS.
+
+===== PAGE 42 =====
+7.3 Impactos sociales identificados y acciones de mitigación 
+Se identificaron los siguientes impactos sociales de la solución, cada uno con 
+acciones concretas de mitigación (Tabla 24). 
+Tabla 24 
+Impactos sociales identificados y acciones de mitigación. 
+Impacto social Riesgo asociado Acción de mitigación 
+Sesgo lingüístico 
+del modelo 
+El reconocimiento podría 
+favorecer ciertos acentos 
+o variantes del español y 
+penalizar a hablantes de 
+zonas rurales. 
+Puntuación determinista por 
+reglas, validación con 
+hablantes diversos, medición 
+del WER en condiciones 
+reales y banco de textos 
+ampliable (sección 10). 
+Brecha digital y 
+accesibilidad 
+La herramienta requiere 
+internet y micrófono, lo 
+que puede excluir a 
+estudiantes sin equipo 
+adecuado. 
+Diseño responsivo, bajo 
+consumo de ancho de banda, 
+funcionamiento en equipos 
+modestos y guías 
+descargables para 
+conectividad intermitente. 
+Sobreconfianza o 
+sustitución del 
+docente 
+El puntaje automático 
+podría interpretarse 
+como sustituto del juicio 
+del docente. 
+La herramienta es 
+explícitamente 
+complementaria y formativa; el 
+docente conserva el panel y la 
+decisión final; la 
+retroalimentación es 
+explicativa, no sancionadora. 
+Privacidad de los 
+estudiantes 
+(menores) 
+Manejo de voz y datos de 
+estudiantes de una 
+institución educativa. 
+Audio efímero, minimización 
+de datos, consentimiento 
+informado y control de acceso 
+por rol.
+
+===== PAGE 43 =====
+8. Conclusiones 
+ 
+En relación con el objetivo general: 
+1. Es factible construir un sistema de retroalimentación por voz, ético y 
+desplegable a bajo costo, que evalúa de forma objetiva la fluidez oral en 
+español y entrega retroalimentación inmediata. 
+2. El sistema cumple de forma sustancial el alcance comprometido en el 
+Project Charter y el Product Backlog. 
+En relación con el objetivo específico 1 (motor de ingesta y transporte de 
+audio de alta fidelidad): 
+3. El pipeline de captura y transporte de audio (PyAV y faster -whisper) 
+permitió obtener la onda en tiempo real e iniciar la transcripción con baja 
+latencia sobre CPU. 
+4. El procesamiento local y la eliminación del audio constituyen una ventaja 
+ética frente a las soluciones que dependen de servicios de reconocimiento 
+en la nube. 
+En relación con el objetivo específico 2 (lógica algorítmica de análisis 
+prosódico y léxico): 
+5. La integración de tecnologías del estado del arte (Whisper, BETO y Praat) 
+permitió cubrir las tres dimensiones de evaluación sin necesidad de 
+entrenar modelos propios. 
+6. El uso de un esquema de puntuación basado en reglas resulta adecuado 
+ante la ausencia de un conjunto de datos etiquetado de voz en español. 
+En relación con el objetivo específico 3 (gestión de datos y visualización 
+formativa): 
+7. La vinculación del 100 % de las sesiones al perfil del usuario y la 
+visualización formativa (historial, reportes en PDF y panel docente) 
+permiten entregar retroalimentación inmediata y accionable.
+
+===== PAGE 44 =====
+9. Recomendaciones 
+ 
+En relación con el objetivo general: 
+1. Capacitar brevemente a los docentes en el uso del panel y la 
+interpretación de las métricas. 
+En relación con el objetivo específico 1 (motor de ingesta y transporte de 
+audio de alta fidelidad): 
+2. Emplear micrófonos cardioides con cancelación de ruido para reducir el 
+WER en entornos acústicamente adversos. 
+En relación con el objetivo específico 2 (lógica algorítmica de análisis 
+prosódico y léxico): 
+3. Realizar la medición del WER con datos de uso real y complementarla 
+con un baseline de reconocimiento puro en condiciones controladas. 
+4. Considerar, como trabajo futuro, un modelo de aprendizaje automático 
+para la clasificación de la fluidez una vez se disponga de datos 
+etiquetados. 
+En relación con el objetivo específico 3 (gestión de datos y visualización 
+formativa): 
+5. Incorporar un banco de textos administrable por el docente y, 
+opcionalmente, voces de síntesis neuronal para una retroalimentación 
+auditiva más natural.
+
+===== PAGE 45 =====
+10. Referencias Bibliográficas 
+ 
+1. Cevallos Correa, F. L., & Gómez Ríos, M. D. (2021). Reconocimiento 
+automático de voz aplicado a la mejora en el proceso de aprendizaje de 
+lectura en nivel escolar (Trabajo de grado). Universidad Politécnica 
+Salesiana, Guayaquil, Ecuador. 
+2. García Pazos, E. A., Escalante Vega, J. E., Alonso Ramírez, O., & 
+Castañeda Sánchez, F. (2025). Software de reconocimiento de voz para 
+el desarrollo de la pronunciación de inglés: Una revisión sistemática. RITI 
+Journal, 13(29). https://doi.org/10.36825/RITI.13.29.014 
+3. Haider, F., Koutsombogera, M., Conlan, O., Vogel, C., Campbell, N., & 
+Luz, S. (2020). An Active Data Representation of Videos for Automatic 
+Scoring of Oral Presentation Delivery Skills and Feedback Generation. 
+Frontiers in Computer Science, 2, 1. 
+https://doi.org/10.3389/fcomp.2020.00001 
+4. Jinga, N., Anghel, A. M., Moldoveanu, F., Moldoveanu, A., Morar, A., & 
+Petrescu, L. (2024). Overcoming Fear and Improving Public Speaking 
+Skills through Adaptive VR Training. Electronics, 13(11), 2042. 
+https://doi.org/10.3390/electronics13112042 
+5. Sánchez, L., Morales, A., & Rodríguez, I. (2024). Speech Recognition 
+Software as a Tool to Enhance EFL Learners' Pronunciation. Lengua y 
+Sociedad, 23(2), 963-983. https://doi.org/10.15381/lengsoc.v23i2.26074 
+6. Sonnleitner, B., Madou, T., Deceuninck, M., Theodosiou, F., & Sagaert, Y. 
+R. (2025). Evaluation of early student performance prediction given 
+concept drift. Computers and Education: Artificial Intelligence, 8, 100369. 
+Elsevier.
+
+===== PAGE 46 =====
+Anexos 
+ 
+1. Anexo A - Código fuente: repositorio GitHub https://github.com/ramdhum-
+a-s-e/SRV-Oratoria-IA  (y repositorio del equipo https://github.com/ALS-
+12321/SRV-Oratoria-IA ). 
+2. Anexo B - Manual de Usuario (documento MANUAL_USUARIO.docx). 
+3. Anexo C - Documentación de Arquitectura (documento 
+ARQUITECTURA.docx). 
+4. Anexo D - Justificaciones de decisiones técnicas del Charter  
+(JUSTIFICACIONES_CHARTER.docx). 
+5. Anexo E - Cuadro comparativo de antecedentes 
+(COMPARATIVA_ANTECEDENTES.docx). 
+6. Anexo F - Diagramas UML y modelo de datos (ver Documentación de 
+Arquitectura). 
+7. Anexo G - Matriz de casos de prueba (documento «Casos de Prueba 
+SRV-Oratoria-IA.xlsx»), con el detalle de pasos, datos y resultados 
+esperados por caso. 
+8. Anexo H - Vistas móviles del sistema (diseño responsivo), que se 
+muestran a continuación. 
+9. Anexo I - Pruebas Unitarias (caja blanca): documento completo, incluido 
+a continuacion. 
+10. Anexo J - Pruebas de Funcionalidad / Integracion de la API: documento 
+completo, incluido a continuacion. 
+11. Anexo K  - Pruebas de Caja Negra: documento completo, incluido a 
+continuacion. 
+12. Anexo L - Pruebas End-to-End (E2E): documento completo, incluido a 
+continuacion. 
+13. Anexo M  - Pruebas de Capacidad y Rendimiento (Apache JMeter): 
+documento completo, incluido a continuacion; los tableros HTML 
+generados por JMeter estan en la carpeta jmeter/resultados. 
+14. Anexo N - Matriz de Casos de Uso (25 casos, Sprints 1 y 2): se detalla a 
+continuacion.
+
+===== PAGE 47 =====
+Anexo I — Pruebas Unitarias (caja blanca) 
+Documento de Pruebas Unitarias 
+Sistema de Retroalimentación por Voz (SRV) basado en IA para la evaluación 
+de la fluidez de oratoria en educación primaria 
+I.E. Juan José Farfán – Lancones, Piura | UPAO 2026 
+Elaborado por: Lezcano Saavedra, Anthony; Arévalo Espinoza, Ramdhum 
+Tipo de prueba a realizar: Pruebas Unitarias (caja blanca, lógica pura) 
+1. Descripción 
+Se verifica de forma aislada la lógica pura del backend  (funciones de 
+puntuación, validación de sesión, fidelidad de lectura y reglas de 
+retroalimentación por dimensión), sin levantar la aplicación web ni la base de 
+datos y sin cargar los modelos pesados de IA. Cada prueba fija entradas 
+conocidas y comprueba l a salida esperada, garantizando que el cálculo del 
+puntaje sea correcto, determinista y estable frente a cambios. 
+• Framework: pytest (con pytest -cov para cobertura). Configuración en 
+backend/pytest.ini. La versión exacta del entorno de ejecución consta en 
+la evidencia (Sección 4). 
+• Ubicación: backend/tests/ (archivos test_unit.py, 
+test_scoring_guards.py, test_determinismo.py, test_feedback.py, 
+test_ia.py). 
+• Aislamiento: conftest.py fuerza el fallback de NLP (sin spaCy/BETO ni 
+red) y usa una BD SQLite temporal; las pruebas unitarias de esta sección 
+no requieren ni BD ni red. 
+• Comando de ejecución: cd backend  →  pytest -q   (cobertura: pytest --
+cov=. --cov-report=html) 
+• Hardware y Software: Backend FastAPI (Uvicorn) ejecutándose sobre 
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en 
+desarrollo/pruebas. Entorno local: Python 3.11. Despliegue: Railway 
+(backend), Vercel (frontend), Supabase (BD). 
+2. Casos de prueba unitarios
+
+===== PAGE 48 =====
+2.1 Puntaje global y fidelidad de lectura — test_unit.py 
+Caso (función de prueba) Entrada 
+Resultado 
+esperado 
+test_score_global_ponderacion D1=100,D2=0,D3=0 
+score_global = 40.0 
+(D1 pesa 40%) 
+test_score_global_ponderacion D1=D2=D3=100 / 0 
+score_global = 100.0 
+/ 0.0 
+test_score_global_niveles_y_estrellas D1=D2=D3=60 
+score=60 → 3 
+estrellas, nivel 'En 
+desarrollo' 
+test_score_global_niveles_y_estrellas 100 y 0 
+5 estrellas y 1 
+estrella 
+respectivamente 
+test_fidelidad_identica 
+'el gato corre' vs 'El 
+gato corre.' 
+fidelidad=100, nivel 
+'excelente', WER=0 
+test_fidelidad_con_errores 
+'el perro corre rapido' 
+vs 'el gato corre' 
+0 < fidelidad < 100; 
+palabras_texto=3 
+test_fidelidad_texto_vacio 'hola' vs '' 
+fidelidad=0.0, nivel 
+'n/a' 
+test_fidelidad_normaliza_tildes_y_puntuacion 
+'El nino corrio' vs 'El 
+niño corrió!' 
+fidelidad=100 
+(normaliza 
+tildes/puntuación)
+
+===== PAGE 49 =====
+2.2 Guard de sesión válida (regresión anti -inflado) — 
+test_scoring_guards.py 
+Regresión del defecto por el que grabaciones de silencio o de 1 –2 
+palabras se puntuaban como 'Bueno'. Se fija que sin voz cada dimensión da 0 y 
+que la sesión solo es válida con ≥ 10 palabras y ≥ 5 s de habla 
+(services/validation.py). 
+Caso (función de prueba) Entrada Resultado esperado 
+test_d1_sin_voz_es_cero word_count=0 score_d1 = 0.0 
+test_d2_sin_voz_es_cero word_count=0 score_d2 = 0.0 
+test_d1_con_voz_real_sigue_puntuando 40 palabras, 24 s 
+score_d1 > 0 (el guard no 
+afecta sesiones válidas) 
+test_sesion_vacia_invalida (0 palabras, 0 s) es_sesion_valida = False 
+test_sesion_dos_palabras_invalida (2 palabras, 1 s) 
+es_sesion_valida = False; 
+hay motivo de invalidez 
+test_sesion_corta_en_duracion_invalida (10 palabras, 4 s) 
+es_sesion_valida = False 
+(poca duración) 
+test_sesion_valida_pasa 
+(10 palabras, 5 s) y 
+(30, 20 s) 
+es_sesion_valida = True; 
+sin motivo de invalidez
+
+===== PAGE 50 =====
+2.3 Determinismo y estabilidad del scoring — test_determinismo.py 
+Garantiza que el puntaje es una función continua (sin 'escalones' que salten la 
+nota) y determinista (misma entrada → misma salida). Incluye un bloque golden 
+end-to-end que se ejecuta solo si existe backend/tests/fixtures/ref.wav y faster -
+whisper está instalado. 
+Caso (función de prueba) Verifica 
+test_ppm_meseta_y_extremos 
+PPM 80–120 → 100 pts; 40 y 160 
+→ 0; zona intermedia entre 0 y 
+100 
+test_ppm_sin_cliff_en_umbral 
+79.9 vs 80.1 PPM difieren < 1 
+punto (sin salto brusco) 
+test_ppm_monotona_creciente_hasta_ideal 
+El puntaje no decrece al 
+acercarse al rango ideal 
+test_pausas_continuo_decrece 
+0 pausas→100, 1→75, 2→50, 
+10→0 (recorte sin negativos) 
+test_muletillas_rampa_calibrada 
+0–1→40 pts, 4→25, 9→0; sin cliff 
+entre 4 y 5 
+test_ttr_rampa_calibrada 
+TTR 0.30→20, 0.50→35 (recorte 
+a 35), 0.0→5 (recorte a 5) 
+test_coherencia_interpola_por_metodo 
+BETO 0.79→15, 0.86→25; texto 
+corto (n/a)→20 neutral 
+test_feedback_d1_es_determinista_para_misma_entrada 
+Dos llamadas con la misma 
+entrada → salida idéntica 
+test_golden_mismo_audio_misma_transcripcion (cond.) 
+Mismo .wav transcrito dos veces 
+→ transcripción idéntica 
+test_golden_mismo_audio_mismos_scores (cond.) 
+Pipeline D1 dos veces sobre el 
+mismo audio → mismos números
+
+===== PAGE 51 =====
+2.4 Reglas de retroalimentación por dimensión — test_feedback.py 
+Caso (función de prueba) Verifica 
+test_feedback_d1 generate_feedback (fluidez): estrellas 1–5, incluye 
+mensaje_principal y score_d1 
+test_feedback_d2_fallback D2 en modo fallback (regex/Jaccard): score_d2, 
+estrellas 1–5, coherencia_nivel 
+test_expresividad_d3 calc_expresividad: score_d3 en 0 –100, estrellas 
+1–5, incluye breakdown 
+test_expresividad_d3_sin_datos Prosodia vacía → devuelve score_d3 y breakdown 
+sin fallar 
+ 
+2.5 IA generativa: seguridad y privacidad — test_ia.py 
+Caso (función de prueba) Verifica 
+test_ia_desactivada_devuelve_none 
+Con IA_GENERATIVA_ENABLED=0 no se 
+llama a la API externa (devuelve None) 
+test_prompt_solo_numeros_sin_transcripcion 
+El prompt no incluye voz ni transcripción, 
+solo métricas numéricas 
+ 
+3. Criterio de aceptación 
+• Todas las pruebas unitarias deben pasar (estado PASA) al ejecutar 'pytest -
+q' en backend/. 
+• Los casos golden (2.3) son condicionales: se marcan 'skipped' si falta el audio 
+de referencia o faster-whisper; no cuentan como fallo. 
+• Se recomienda adjuntar la salida de consola de pytest y, opcionalmente, el 
+reporte de cobertura HTML. 
+ 
+ 
+4. Resultado de la ejecución 
+• Fecha de ejecución: 18/07/2026
+
+===== PAGE 52 =====
+• Entorno de ejecución: Windows 11; Python 3.13.7; pytest 9.1.1 (entorno 
+local de desarrollo). 
+• Resultado global: 27 pruebas superadas (PASA) y 2 omitidas 
+(SKIPPED, golden condicional). Sin fallos. 
+Salida de la consola (pytest -v): 
+$ pytest -v tests/test_unit.py tests/test_scoring_guards.py \ 
+           tests/test_determinismo.py tests/test_feedback.py tests/test_ia.py 
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 
+rootdir: ...\SRV-Oratoria-IA\backend  |  configfile: pytest.ini 
+collected 29 items 
+ 
+test_unit.py::test_score_global_ponderacion PASSED 
+test_unit.py::test_score_global_niveles_y_estrellas PASSED 
+test_unit.py::test_fidelidad_identica PASSED 
+test_unit.py::test_fidelidad_con_errores PASSED 
+test_unit.py::test_fidelidad_texto_vacio PASSED 
+test_unit.py::test_fidelidad_normaliza_tildes_y_puntuacion PASSED 
+test_scoring_guards.py::test_d1_sin_voz_es_cero PASSED 
+test_scoring_guards.py::test_d2_sin_voz_es_cero PASSED 
+test_scoring_guards.py::test_d1_con_voz_real_sigue_puntuando PASSED 
+test_scoring_guards.py::test_sesion_vacia_invalida PASSED 
+test_scoring_guards.py::test_sesion_dos_palabras_invalida PASSED 
+test_scoring_guards.py::test_sesion_corta_en_duracion_invalida PASSED 
+test_scoring_guards.py::test_sesion_valida_pasa PASSED 
+test_determinismo.py::test_ppm_meseta_y_extremos PASSED 
+test_determinismo.py::test_ppm_sin_cliff_en_umbral PASSED 
+test_determinismo.py::test_ppm_monotona_creciente_hasta_ideal PASSED 
+test_determinismo.py::test_pausas_continuo_decrece PASSED 
+test_determinismo.py::test_muletillas_rampa_calibrada PASSED 
+test_determinismo.py::test_ttr_rampa_calibrada PASSED 
+test_determinismo.py::test_coherencia_interpola_por_metodo PASSED
+
+===== PAGE 53 =====
+test_determinismo.py::test_feedback_d1_es_determinista_para_misma_entra
+da PASSED 
+test_determinismo.py::test_golden_mismo_audio_misma_transcripcion 
+SKIPPED 
+test_determinismo.py::test_golden_mismo_audio_mismos_scores SKIPPED 
+test_feedback.py::test_feedback_d1 PASSED 
+test_feedback.py::test_feedback_d2_fallback PASSED 
+test_feedback.py::test_expresividad_d3 PASSED 
+test_feedback.py::test_expresividad_d3_sin_datos PASSED 
+test_ia.py::test_ia_desactivada_devuelve_none PASSED 
+test_ia.py::test_prompt_solo_numeros_sin_transcripcion PASSED 
+ 
+======================= 27 passed, 2 skipped in 2.32s 
+======================= 
+ 
+Nota: los 2 casos SKIPPED corresponden al bloque golden end-to-end (Sección 
+2.3), que solo se ejecuta si existe backend/tests/fixtures/ref.wav y faster-whisper 
+está instalado; su omisión es esperada y no constituye un fallo.
+
+===== PAGE 54 =====
+Anexo J — Pruebas de Funcionalidad / Integracion de la API 
+Documento de Pruebas de Funcionalidad (Integración de API) 
+Sistema de Retroalimentación por Voz (SRV) basado en IA para la evaluación de la 
+fluidez de oratoria en educación primaria 
+I.E. Juan José Farfán – Lancones, Piura | UPAO 2026 
+Elaborado por: Lezcano Saavedra, Anthony; Arévalo Espinoza, Ramdhum 
+ 
+Tipo de prueba a realizar: Pruebas de Funcionalidad / Integración de la API 
+1. Descripción 
+Se verifica el comportamiento funcional de la API (FastAPI) de extremo a 
+extremo del servidor: se levanta la aplicación en memoria con el cliente de 
+pruebas (TestClient) y se ejercitan los endpoints  reales — registro, inicio de 
+sesión, control de acceso por rol, análisis de audio e historial — comprobando 
+códigos HTTP, cuerpos de respuesta y la persistencia en base de datos. El 
+pipeline pesado de IA (conversión de audio + faster -whisper + prosodia) s e 
+sustituye por un mock para que las pruebas sean rápidas y deterministas; se 
+valida el flujo y el contrato de la API, no los modelos. 
+• Framework: pytest + Starlette/FastAPI TestClient (httpx 0.28.1). 
+• Ubicación: backend/tests/ (test_auth.py, test_rbac.py, test_audio.py, 
+test_metrics.py). 
+• Entorno de prueba: BD SQLite temporal aislada (nunca toca Supabase); 
+tablas recreadas por cada test; pipeline de audio mockeado y D2 forzado 
+a fallback (conftest.py). 
+• Comando de ejecución: cd backend  →  pytest -q 
+• Hardware y Software: Backend FastAPI (Uvicorn) ejecutándose sobre 
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en 
+desarrollo/pruebas. Entorno local: Python 3.11. Despliegue: Railway 
+(backend), Vercel (frontend), Supabase (BD). 
+ 
+2. Endpoints de la API (superficie funcional)
+
+===== PAGE 55 =====
+La columna 'Cobertura' indica si el endpoint tiene una prueba de integración 
+automatizada (pytest, esta suite) o si su validación funcional se realiza en el Plan 
+de Pruebas de Caja Negra (ejecución manual, Escenario 7). 
+Método y ruta Función Autenticación Cobertura 
+POST /auth/register 
+Registro de usuario 
+(alumno/docente) + 
+JWT 
+No (pública) Automatizada 
+POST /auth/login 
+Inicio de sesión, 
+emite JWT 
+No (pública) Automatizada 
+GET /auth/me 
+Datos del usuario 
+autenticado 
+JWT Automatizada 
+POST /audio/analizar 
+Analiza el audio 
+(multipart: file, modo, 
+texto_id) 
+JWT Automatizada 
+GET /metrics/historial 
+Historial de sesiones 
+del alumno 
+JWT (alumno) Automatizada 
+GET 
+/metrics/docente/alumnos 
+Lista de alumnos del 
+docente 
+JWT (docente) Automatizada 
+GET /audio/textos 
+Lista de textos guía 
+para modo lectura 
+JWT Caja negra 
+GET 
+/metrics/docente/alumno/{id} 
+Detalle de un alumno JWT (docente) Caja negra 
+GET /metrics/sesion/{id} Detalle de una sesión JWT (propietario) Caja negra 
+GET /metrics/reporte/{id} 
+Reporte PDF de una 
+sesión 
+JWT (propietario) Caja negra 
+ 
+ 
+3. Casos de prueba de funcionalidad 
+3.1 Autenticación — test_auth.py 
+Caso Acción Resultado esperado 
+test_register_ok 
+POST /auth/register con 
+datos válidos 
+HTTP 201; devuelve 
+access_token; NO 
+expone password/hash 
+test_register_username_duplicado 
+Registrar el mismo 
+username dos veces 
+1º 201; 2º HTTP 400 
+(usuario ya existe)
+
+===== PAGE 56 =====
+test_login_ok 
+POST /auth/login con 
+credenciales correctas 
+HTTP 200; devuelve 
+access_token 
+test_login_password_incorrecta 
+Login con contraseña 
+errónea 
+HTTP 401 
+test_me_requiere_token GET /auth/me sin token HTTP 401 
+test_me_con_token 
+GET /auth/me con token 
+válido 
+HTTP 200; username 
+correcto 
+ 
+3.2 Control de acceso por roles (RBAC) — test_rbac.py 
+Caso Acción 
+Resultado 
+esperado 
+test_registro_docente_devuelve_rol Registrar usuario con rol 
+'docente' 
+HTTP 201; 
+user.rol = 
+'docente' 
+test_alumno_no_accede_a_panel_docente Alumno → GET 
+/metrics/docente/alumnos 
+HTTP 403 (Solo 
+para docentes) 
+test_docente_ve_lista_de_alumnos Docente → GET 
+/metrics/docente/alumnos 
+HTTP 200; lista 
+incluye a sus 
+alumnos 
+test_rol_invalido_rechazado Registrar con rol 'admin' HTTP 422 (rol 
+inválido) 
+ 
+ 
+ 
+3.3 Análisis de audio — test_audio.py (pipeline mockeado) 
+Caso Acción Resultado esperado 
+test_analizar_requiere_auth POST 
+/audio/analizar sin 
+token 
+HTTP 401 
+test_analizar_modo_libre Analizar en modo 
+libre (transcripción 
+válida) 
+HTTP 200; incluye sesion_id, 
+transcripcion, ppm, pausas, d2, 
+d3, score_global; lectura=None 
+test_analizar_modo_lectura_fidelidad Modo lectura 
+leyendo el texto 
+exacto 
+HTTP 200; 
+lectura.fidelidad_score=100.0, 
+nivel 'excelente'
+
+===== PAGE 57 =====
+3.4 Historial y métricas — test_metrics.py 
+Caso Acción Resultado esperado 
+test_historial_requiere_auth GET /metrics/historial sin 
+token 
+HTTP 401 
+test_historial_vacio Historial de un alumno recién 
+creado 
+HTTP 200; lista vacía [] 
+test_historial_refleja_sesion Analizar un audio y luego 
+consultar historial 
+HTTP 200; 1 sesión, 
+modo 'libre', ppm no 
+nulo 
+ 
+4. Criterio de aceptación 
+• Todos los casos deben pasar con 'pytest -q' en backend/. 
+• Cada endpoint protegido debe rechazar peticiones sin token (401) y respetar 
+el rol (403). 
+• La respuesta de registro/login nunca debe exponer la contraseña ni su hash. 
+• El análisis en modo lectura con texto idéntico debe dar fidelidad 100%. 
+5. Resultado de la ejecución 
+Fecha de ejecución: 18/07/2026 
+Entorno de ejecución: Windows 11; Python 3.13.7; pytest 9.1.1; FastAPI 
+TestClient; BD SQLite temporal aislada (entorno local de desarrollo). 
+Resultado global: 16 pruebas de integración superadas (PASA). Sin fallos. 
+Salida de la consola (pytest -v): 
+$ pytest -v tests/test_auth.py tests/test_rbac.py \ 
+           tests/test_audio.py tests/test_metrics.py 
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0 
+rootdir: ...\SRV-Oratoria-IA\backend  |  configfile: pytest.ini 
+collected 16 items 
+ 
+test_auth.py::test_register_ok PASSED 
+test_auth.py::test_register_username_duplicado PASSED 
+test_auth.py::test_login_ok PASSED
+
+===== PAGE 58 =====
+test_auth.py::test_login_password_incorrecta PASSED 
+test_auth.py::test_me_requiere_token PASSED 
+test_auth.py::test_me_con_token PASSED 
+test_rbac.py::test_registro_docente_devuelve_rol PASSED 
+test_rbac.py::test_alumno_no_accede_a_panel_docente PASSED 
+test_rbac.py::test_docente_ve_lista_de_alumnos PASSED 
+test_rbac.py::test_rol_invalido_rechazado PASSED 
+test_audio.py::test_analizar_requiere_auth PASSED 
+test_audio.py::test_analizar_modo_libre PASSED 
+test_audio.py::test_analizar_modo_lectura_fidelidad PASSED 
+test_metrics.py::test_historial_requiere_auth PASSED 
+test_metrics.py::test_historial_vacio PASSED 
+test_metrics.py::test_historial_refleja_sesion PASSED 
+ 
+============================ 16 passed in 3.88s 
+=============================
+
+===== PAGE 59 =====
+Anexo K — Pruebas de Caja Negra 
+Documento de Pruebas de Caja Negra 
+Sistema de Retroalimentación por Voz (SRV) basado en IA para la evaluación de la 
+fluidez de oratoria en educación primaria 
+I.E. Juan José Farfán — Lancones, Piura | UPAO 2026 
+ 
+Descripción del Caso de Prueba: 
+Tipo de prueba a realizar: 
+Pruebas de Caja Negra 
+Descripción: 
+Se prueba el comportamiento externo de la aplicación web SRV (sin conocer su 
+implementación interna), verificando la respuesta del sistema ante distintas entradas. 
+Se describe: 
+• Todo lo que está fuera de los módulos (interfaz de usuario y respuestas de la API). 
+• Interfaces (pantallas de registro, login, práctica/grabación, resultados, historial y 
+panel docente). 
+• Respuesta a las entradas (validación de formularios y de audio). 
+• Integridad de los datos (relación usuario–sesión–resultados; audio efímero). 
+• Evaluación de diferentes escenarios (válidos, inválidos y casos límite). 
+• Respuestas de la aplicación (mensajes de error, códigos HTTP y retroalimentación). 
+• Secuencia de mensajes entre el cliente (React) y la API (FastAPI). 
+Nota: las condiciones y los resultados descritos derivan de las validaciones 
+implementadas en el código y de los 25 casos de prueba definidos en 'Casos de 
+Prueba SRV -Oratoria-IA.xlsx' (5 módulos). Las capturas de pantalla deben 
+adjuntarse tras ejecutar cada escenario en la aplicación desplegada. 
+ 
+Escenario 1: Registro de un nuevo usuario (casos 1.1 y 1.2) 
+Datos de Entrada: 
+Registro de un nuevo usuario (alumno o docente) en la aplicación SRV. 
+Entorno:
+
+===== PAGE 60 =====
+El módulo de registro recibe los datos del usuario a través de un formulario. Los 
+campos son validados por un DTO (esquema Pydantic) en el backend antes de crear 
+el usuario. La contraseña se almacena con hash Argon2. 
+Parámetros: 
+• Campo Nombre 
+• Campo Apellido 
+• Campo Usuario 
+• Campo Contraseña 
+• Selector de Rol (alumno / docente) 
+• Campo Grado (opcional) 
+• Campo Sección (opcional) 
+Respuesta de otros módulos: 
+Se llama al módulo de registro (POST /auth/register ), que valida el DTO y, si es 
+correcto, crea el usuario y devuelve un token JWT. 
+Condiciones iniciales: 
+1. Se dejó nulo el nombre y/o el apellido. 
+2. Se ingresaron números o símbolos en nombre o apellido (p. ej. 'Ana1', 'Jo@n'). 
+3. Se ingresó un nombre o apellido de 1 carácter (por debajo del mínimo de 2). 
+4. Se ingresó un usuario con menos de 3 caracteres. 
+5. Se ingresó un usuario con números o símbolos (solo se permiten letras). 
+6. Se ingresó un usuario que ya existe en la base de datos (duplicado). 
+7. Se ingresó una contraseña de menos de 6 caracteres. 
+8. Se ingresó una contraseña con caracteres especiales (solo se permiten letras y 
+números). 
+9. Se seleccionó un rol distinto de 'alumno' o 'docente'. 
+10. Se ingresaron todos los datos válidos (nombre/apellido solo letras 2–50; usuario 
+solo letras 3–30; contraseña alfanumérica 6–128; rol alumno/docente). 
+ 
+Datos de Salida: 
+Resultados entregados: 
+• Condiciones 1 a 5, 7, 8 y 9: la aplicación rechaza el registro y muestra un mensaje 
+de validación (HTTP 422) indicando el campo y la regla incumplida; NO se crea el 
+usuario. 
+• Condición 6 (usuario duplicado): la aplicación responde 'El nombre de usuario ya 
+existe' (HTTP 400); no se crea.
+
+===== PAGE 61 =====
+• Condición 10 (datos válidos): la aplicación crea el usuario, almacena la contraseña 
+con hash Argon2 y devuelve un token JWT (HTTP 201), iniciando sesión 
+automáticamente. 
+Estado final de las variables: 
+Se adjunta captura de la prueba:
+
+===== PAGE 62 =====
+Evidencia (captura real del sistema, 18/07/2026):  
+ 
+ 
+Requisitos de configuración para hacer la prueba:
+
+===== PAGE 63 =====
+Método de Prueba: 
+Partición de equivalencia y análisis de valores límite (longitudes 2/50 en nombre -
+apellido, 3/30 en usuario y 6/128 en contraseña), insertando distintos tipos de 
+caracteres en cada campo. 
+Módulos: 
+routers/auth.py (register), schemas/auth.py (RegisterRequest — validadores del 
+DTO), utils/auth.py (hash_password con Argon2, create_token  JWT) y 
+models/user.py. 
+Hardware y Software: 
+Para la realización de la prueba se usó un navegador web moderno (Chrome/Edge) 
+con micrófono y conexión a internet. Backend FastAPI (Uvicorn) ejecutándose sobre 
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en desarrollo 
+local. Entorno local: Python 3.11. Despliegue: Railway (backend), Vercel (frontend), 
+Supabase (BD). 
+Procedimientos o herramientas necesarios: 
+Ir a la pantalla de registro, llenar los labels  según cada condición y presionar 
+'Registrarse', observando la respuesta de la aplicación. 
+Dependencias o relación con otros casos de prueba: 
+Es el punto de entrada; el usuario creado con datos válidos se reutiliza en el 
+Escenario 2 (inicio de sesión) y en los escenarios de análisis de audio. 
+Escenario 2: Inicio de sesión (casos 1.3 y 1.4) 
+Datos de Entrada: 
+Inicio de sesión de un usuario registrado en la aplicación SRV. 
+Entorno: 
+El módulo de inicio de sesión recibe usuario y contraseña, verifica las credenciales 
+contra el hash Argon2 almacenado y, si son correctas, emite un token JWT que 
+autoriza el acceso a las rutas protegidas. 
+Parámetros: 
+• Campo Usuario 
+• Campo Contraseña 
+Respuesta de otros módulos: 
+Se llama al módulo de inicio de sesión (POST /auth/login), que valida las 
+credenciales y devuelve el token. 
+Condiciones iniciales:
+
+===== PAGE 64 =====
+1. Se dejaron nulos el usuario y/o la contraseña. 
+2. Se ingresó un usuario inexistente. 
+3. Se ingresó un usuario válido con contraseña incorrecta. 
+4. Se ingresaron credenciales válidas (usuario y contraseña correctos). 
+Datos de Salida: 
+Resultados entregados: 
+• Condición 1: la aplicación no procesa el envío y muestra un mensaje de validación 
+(campos requeridos). 
+• Condiciones 2 y 3: la aplicación no inicia sesión y muestra 'Usuario o contraseña 
+incorrectos' (HTTP 401). 
+• Condición 4: la aplicación inicia sesión, entrega el token JWT y redirige a la pantalla 
+principal según el rol. 
+Estado final de las variables: 
+Se adjunta captura de la prueba: 
+Evidencia (captura real del sistema, 18/07/2026):
+
+===== PAGE 65 =====
+Requisitos de configuración para hacer la prueba: 
+Método de Prueba: 
+Partición de equivalencia (credenciales válidas vs. inválidas) y prueba de campos 
+nulos. 
+Módulos: 
+routers/auth.py (login), utils/auth.py (verify_password con Argon2, create_token), 
+models/user.py. 
+Hardware y Software:
+
+===== PAGE 66 =====
+Para la realización de la prueba se usó un navegador web moderno (Chrome/Edge) 
+con micrófono y conexión a internet. Backend FastAPI (Uvicorn) ejecutándose sobre 
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en desarrollo 
+local. Entorno local: Python 3.11. Despliegue: Railway (backend), Vercel (frontend), 
+Supabase (BD). 
+Procedimientos o herramientas necesarios: 
+Ir a la pantalla de inicio de sesión, ingresar las credenciales según cada condición y 
+presionar 'Iniciar sesión'. 
+Dependencias o relación con otros casos de prueba: 
+Requiere que exista un usuario registrado (Escenario 1). El token obtenido habilita 
+los escenarios siguientes. 
+Escenario 3: Control de acceso por roles — RBAC (caso 1.5) 
+Datos de Entrada: 
+Acceso a funcionalidades protegidas según el rol del usuario (alumno / docente). 
+Entorno: 
+El rol viaja dentro del token JWT. Una guarda de autorización (require_docente) 
+restringe los endpoints del panel del docente; un alumno solo puede acceder a sus 
+propios datos. 
+Parámetros: 
+• Token JWT con rol 'alumno' 
+• Token JWT con rol 'docente' 
+• Petición sin token o con token inválido/expirado 
+Respuesta de otros módulos: 
+Se llama a la guarda de autorización (get_current_user / require_docente) antes de 
+ejecutar el endpoint solicitado. 
+Condiciones iniciales: 
+1. Un usuario con rol 'alumno' intenta acceder al panel del docente (p. ej. GET 
+/metrics/docente/alumnos). 
+2. Un usuario con rol 'docente' accede al panel del docente. 
+3. Se realiza una petición a un endpoint protegido sin token, o con un token inválido 
+o expirado. 
+Datos de Salida: 
+Resultados entregados:
+
+===== PAGE 67 =====
+• Condición 1: la aplicación deniega el acceso y responde 'Solo para docentes' (HTTP 
+403). 
+• Condición 2: la aplicación permite el acceso y muestra la lista de alumnos y sus 
+sesiones. 
+• Condición 3: la aplicación responde 'Token invalido o expirado' (HTTP 401) y no 
+ejecuta la acción. 
+Estado final de las variables: 
+Se adjunta captura de la prueba: 
+Evidencia (captura real del sistema, 18/07/2026):
+
+===== PAGE 68 =====
+Requisitos de configuración para hacer la prueba: 
+Método de Prueba: 
+Técnica de tabla de decisión (rol × recurso solicitado), evaluando las combinaciones 
+permitidas y denegadas. 
+Módulos: 
+utils/auth.py (get_current_user, require_docente) y routers/metrics.py (endpoints del 
+panel docente). 
+Hardware y Software: 
+Para la realización de la prueba se usó un navegador web moderno (Chrome/Edge) 
+con micrófono y conexión a internet. Backend FastAPI (Uvicorn) ejecutándose sobre 
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en desarrollo 
+local. Entorno local: Python 3.11. Despliegue: Railway (backend), Vercel (frontend), 
+Supabase (BD). 
+Procedimientos o herramientas necesarios: 
+Iniciar sesión con un alumno y con un docente; intentar acceder al panel del docente 
+en cada caso y observar la respuesta; repetir sin token / con token manipulado. 
+Dependencias o relación con otros casos de prueba: 
+Depende del Escenario 2 (se necesita un token válido de cada rol). 
+Escenario 4: Captura y procesamiento de audio (casos 2.1–2.5 y 3.5) 
+Datos de Entrada: 
+Grabación de la voz del estudiante en el navegador, su envío a la API y el guard de 
+contenido mínimo. 
+Entorno: 
+El cliente captura el audio con la interfaz de onda en tiempo real y lo envía a POST 
+/audio/analizar. El backend lo convierte a WAV mono 16 kHz (PyAV), aplica filtros 
+anti-ruido, lo transcribe (faster-whisper) y valida que tenga contenido suficiente antes 
+de puntuar. El audio se elimina tras el análisis. 
+Parámetros: 
+• Archivo de audio grabado (WebM/Opus) 
+• Permiso de micrófono del navegador 
+• Parámetro 'modo' (libre / lectura) 
+Respuesta de otros módulos:
+
+===== PAGE 69 =====
+Se llama al módulo de audio (routers/audio.py → utils/audio.to_wav, 
+services/validation, services/audio_processor y dimension1). 
+Condiciones iniciales: 
+1. Se deniega el permiso de micrófono del navegador. 
+2. Se envía una grabación en silencio o solo con ruido (sin voz). 
+3. Se envía una grabación muy corta: menos de 10 palabras o menos de 5 s de 
+habla efectiva (valor límite). 
+4. Se envía una grabación válida (≥ 10 palabras y ≥ 5 s de habla). 
+5. Se envía una grabación válida pero con ruido de fondo de aula. 
+Datos de Salida: 
+Resultados entregados: 
+• Condición 1: sin permiso de micrófono el navegador no inicia la grabación; la 
+aplicación no puede capturar audio. 
+• Condiciones 2 y 3: la aplicación marca la sesión como inválida (sesion_valida  = 
+false), muestra 'No detectamos suficiente voz en tu grabación…', y NO puntúa ni 
+guarda la sesión. 
+• Condición 4: la aplicación procesa el audio y devuelve la transcripción, las métricas 
+y el puntaje; guarda la sesión. 
+• Condición 5: la aplicación aplica los filtros anti-ruido (paso-alto Butterworth + puerta 
+de ruido) antes de transcribir y procesa la sesión con normalidad. 
+Estado final de las variables: 
+Se adjunta captura de la prueba:
+
+===== PAGE 70 =====
+Evidencia (captura real del sistema, 18/07/2026):  
+ 
+Requisitos de configuración para hacer la prueba: 
+Método de Prueba: 
+Partición de equivalencia (audio válido / inválido) y análisis de valores límite sobre 
+el guard de contenido mínimo (10 palabras y 5 s). 
+Módulos: 
+routers/audio.py, utils/audio.py (to_wav 16 kHz), utils/audio_filters.py, 
+services/validation.py (es_sesion_valida) y services/audio_processor.py. 
+Hardware y Software: 
+Para la realización de la prueba se usó un navegador web moderno (Chrome/Edge) 
+con micrófono y conexión a internet. Backend FastAPI (Uvicorn) ejecutándose sobre 
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en desarrollo 
+local. Entorno local: Python 3.11. Despliegue: Railway (backend), Vercel (frontend), 
+Supabase (BD). 
+Procedimientos o herramientas necesarios: 
+Iniciar una práctica, conceder o denegar el micrófono, grabar audios de distinta 
+duración/contenido y observar la respuesta de la aplicación. 
+Dependencias o relación con otros casos de prueba: 
+Requiere un usuario con sesión iniciada (Escenario 2). Alimenta los escenarios 5 y 
+6 (análisis y modo lectura).
+
+===== PAGE 71 =====
+Escenario 5: Análisis de fluidez, vocabulario y expresividad + puntaje 
+(casos 3.x, 4.x y 5.1) 
+Datos de Entrada: 
+Análisis de una grabación válida en las tres dimensiones (fluidez, 
+vocabulario/coherencia y expresividad) y cálculo del puntaje global. 
+Entorno: 
+Sobre la transcripción y la señal se calculan: velocidad (PPM), pausas/bloqueos y 
+prosodia (D1); muletillas, riqueza léxica (TTR) y coherencia con BETO (D2); y 
+expresividad acústica (D3). El puntaje global es 0.40·D1 + 0.35·D2 + 0.25·D3, con 
+una calificación por estrellas. 
+Parámetros: 
+• Transcripción y timestamps por palabra 
+• Señal de audio (rasgos de Praat) 
+• Sub-puntajes D1, D2 y D3 
+Respuesta de otros módulos: 
+Se llaman los módulos dimension1, dimension2 y dimension3, y services/scoring.py 
+para el puntaje global. 
+Condiciones iniciales: 
+1. Audio con velocidad dentro del rango ideal (80–120 PPM) y sin bloqueos. 
+2. Audio muy lento (< 60 PPM) o muy rápido (> 140 PPM). 
+3. Discurso saturado de muletillas (caso negativo: 9 o más). 
+4. Discurso con vocabulario variado (TTR alto) frente a discurso muy repetitivo 
+(TTR bajo). 
+5. Voz expresiva (buena variación tonal) frente a voz monótona. 
+Datos de Salida: 
+Resultados entregados: 
+• La aplicación devuelve, para cada dimensión, un sub -puntaje 0–100 y un detalle 
+explicativo, y combina los tres en un puntaje global (0 –100) con nivel, color y 
+estrellas (≥85 Sobresaliente/5★; ≥70 Bueno/4★; ≥50 En desarrollo/3★; ≥30 Necesita 
+apoyo/2★; <30 Inicio/1★). 
+• Velocidad ideal y sin bloqueos → D1 alto; velocidad extrema o bloqueos → D1 
+menor. 
+• Muletillas altas y TTR bajo → D2 menor; vocabulario variado y buena coherencia → 
+D2 alto.
+
+===== PAGE 72 =====
+• Voz expresiva → D3 alto; voz monótona → D3 menor. 
+• Se generan consejos de mejora acordes a los resultados de cada dimensión. 
+Estado final de las variables: 
+Se adjunta captura de la prueba: 
+Evidencia (captura real del sistema, 18/07/2026): 
+ 
+ 
+Requisitos de configuración para hacer la prueba: 
+Método de Prueba: 
+Partición de equivalencia sobre los rangos de cada métrica (velocidad, muletillas, 
+TTR, coherencia, variación tonal) y casos negativos (discurso saturado de 
+muletillas). 
+Módulos: 
+services/dimension1 (fluency, pauses, prosody, feedback), services/dimension2 
+(lexical, feedback), services/dimension3 (acoustic) y services/scoring.py. 
+Hardware y Software: 
+Para la realización de la prueba se usó un navegador web moderno (Chrome/Edge) 
+con micrófono y conexión a internet. Backend FastAPI (Uvicorn) ejecutándose sobre
+
+===== PAGE 73 =====
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en desarrollo 
+local. Entorno local: Python 3.11. Despliegue: Railway (backend), Vercel (frontend), 
+Supabase (BD). 
+Procedimientos o herramientas necesarios: 
+Grabar audios con distintas características (rápido, lento, con muletillas, monótono) 
+y observar los sub-puntajes, el puntaje global y las estrellas. 
+Dependencias o relación con otros casos de prueba: 
+Requiere una grabación válida (Escenario 4). 
+Escenario 6: Modo lectura — fidelidad / WER (caso 5.2) 
+Datos de Entrada: 
+Evaluación de la fidelidad de lectura comparando lo leído por el estudiante con un 
+texto guía. 
+Entorno: 
+En modo lectura, la aplicación compara la transcripción con el texto original mediante 
+distancia de Levenshtein a nivel de palabra, obteniendo el WER y la fidelidad (0 –
+100). 
+Parámetros: 
+• Texto guía seleccionado (texto_id) 
+• Transcripción de la lectura del estudiante 
+Respuesta de otros módulos: 
+Se llama al módulo de fidelidad de lectura (services/dimension1/reading.py) desde 
+POST /audio/analizar cuando modo = 'lectura'. 
+Condiciones iniciales: 
+1. El estudiante lee el texto casi idéntico al original. 
+2. El estudiante se salta o cambia varias palabras. 
+3. El estudiante lee un texto muy distinto (fidelidad muy baja). 
+4. Se selecciona el modo lectura sin elegir un texto guía. 
+Datos de Salida: 
+Resultados entregados: 
+• Condición 1: fidelidad ≥ 90% → nivel 'excelente' ('¡Leíste el texto casi perfecto!'). 
+• Condición 2: fidelidad entre 50% y 90% → nivel 'bueno' o 'regular', según el WER. 
+• Condición 3: fidelidad < 50% → nivel 'bajo'.
+
+===== PAGE 74 =====
+• Condición 4: al no haber texto de referencia, la aplicación no calcula la fidelidad (no 
+muestra el bloque de lectura). 
+Estado final de las variables: 
+Se adjunta captura de la prueba: 
+Evidencia (captura real del sistema, 18/07/2026):  
+ 
+ 
+Requisitos de configuración para hacer la prueba: 
+Método de Prueba: 
+Partición de equivalencia sobre los umbrales de fidelidad (90 / 70 / 50) y tabla de 
+decisión (con/sin texto guía). 
+Módulos: 
+services/dimension1/reading.py (calc_fidelidad_lectura, distancia de Levenshtein) y 
+routers/audio.py; textos sembrados en models/session.py (TextoLectura). 
+Hardware y Software: 
+Para la realización de la prueba se usó un navegador web moderno (Chrome/Edge) 
+con micrófono y conexión a internet. Backend FastAPI (Uvicorn) ejecutándose sobre
+
+===== PAGE 75 =====
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en desarrollo 
+local. Entorno local: Python 3.11. Despliegue: Railway (backend), Vercel (frontend), 
+Supabase (BD). 
+Procedimientos o herramientas necesarios: 
+Elegir el modo lectura, seleccionar un texto guía, leerlo con distinto grado de fidelidad 
+y observar el resultado. 
+Dependencias o relación con otros casos de prueba: 
+Requiere una grabación válida en modo lectura (Escenario 4) y un texto guía 
+disponible. 
+Escenario 7: Resultados, reportes y panel del docente (casos 5.3, 5.4 y 5.5) 
+Datos de Entrada: 
+Consulta del historial y gráficos de progreso, generación del reporte PDF y acceso 
+del docente a los resultados de sus alumnos. 
+Entorno: 
+Tras cada práctica, la sesión y sus resultados quedan almacenados. El alumno 
+consulta su historial y gráficos y descarga un reporte PDF; el docente accede al 
+panel con el detalle de sus alumnos (RBAC). 
+Parámetros: 
+• Sesiones y resultados almacenados 
+• Identificador de sesión (para el PDF) 
+• Rol del usuario (alumno / docente) 
+Respuesta de otros módulos: 
+Se llama a routers/metrics.py (historial, panel docente, reporte) y a 
+services/report_pdf.py (PDF). 
+Condiciones iniciales: 
+1. El alumno consulta su historial de sesiones. 
+2. El alumno visualiza los gráficos de progreso. 
+3. El alumno genera el reporte PDF de una sesión. 
+4. El docente accede al panel y consulta las sesiones de un alumno. 
+5. Se solicita el reporte de una sesión que no existe o de otro usuario. 
+Datos de Salida: 
+Resultados entregados:
+
+===== PAGE 76 =====
+• Condiciones 1 y 2: la aplicación muestra el historial y los gráficos de progreso del 
+propio alumno. 
+• Condición 3: la aplicación genera y descarga el reporte PDF de desempeño de la 
+sesión. 
+• Condición 4: el docente visualiza la lista de alumnos y el detalle de sus sesiones. 
+• Condición 5: la aplicación no expone datos de otro usuario ni de sesiones 
+inexistentes (control de acceso). 
+Estado final de las variables: 
+Se adjunta captura de la prueba: 
+Evidencia (captura real del sistema, 18/07/2026):  
+ 
+Requisitos de configuración para hacer la prueba: 
+Método de Prueba: 
+Partición de equivalencia (recurso propio / ajeno / inexistente) y verificación de 
+integridad de datos (relación usuario–sesión–resultados). 
+Módulos: 
+routers/metrics.py (historial, docente/alumnos, sesion, reporte) y 
+services/report_pdf.py. 
+Hardware y Software: 
+Para la realización de la prueba se usó un navegador web moderno (Chrome/Edge) 
+con micrófono y conexión a internet. Backend FastAPI (Uvicorn) ejecutándose sobre 
+CPU; base de datos PostgreSQL (Supabase) en producción y SQLite en desarrollo
+
+===== PAGE 77 =====
+local. Entorno local: Python 3.11. Despliegue: Railway (backend), Vercel (frontend), 
+Supabase (BD). 
+Procedimientos o herramientas necesarios: 
+Con sesiones ya registradas, consultar el historial y los gráficos, generar el PDF y, 
+como docente, revisar el panel; intentar acceder a una sesión ajena o inexistente. 
+Dependencias o relación con otros casos de prueba: 
+Requiere sesiones registradas (Escenarios 4 –6) y usuarios de ambos roles 
+(Escenario 1). 
+Listado técnico: 
+Archivos Involucrados: 
+Backend (FastAPI): main.py; routers/ (auth, audio, metrics); services/ (dimension1, 
+dimension2, dimension3, scoring, validation, report_pdf, audio_processor, 
+nlp_models, ia_consejos); utils/ (audio, audio_filters, auth); models/ (user, session, 
+metrics); schemas/ (auth, audio, metrics); config.py; database.py. Frontend (React): 
+pages/ (Login, ModoSeleccion, Practica, Historial, PanelDocente), api.js. 
+Sistemas y Bibliotecas: 
+• Frontend: React 19 + Vite 8, React Router, WaveSurfer.js, Chart.js, Axios. 
+• Backend: FastAPI, Uvicorn, SQLAlchemy, Pydantic. 
+• ASR: faster-whisper (modelo medium, CPU int8) + CTranslate2. 
+• Prosodia: praat-parselmouth (Praat). 
+• NLP: spaCy (es_core_news_lg) + BETO (transformers, torch CPU). 
+• Audio: PyAV (av), NumPy. 
+• Seguridad: python-jose (JWT), passlib[argon2] (Argon2). 
+• Reportes: ReportLab (PDF). 
+• IA generativa (opcional): Anthropic Claude Haiku. 
+• Infraestructura: Railway, Vercel, Supabase (PostgreSQL). 
+Errores: 
+La suite de pruebas automatizadas (pytest: autenticación, RBAC, 
+scoring/guards, determinismo, feedback, métricas y flujo de audio) se ejecutó sin fallos, 
+y la prueba de determinismo end-to-end confirmó reproducibilidad exacta (2 audios × 10 
+corridas, 13 métricas con desviación estándar = 0).
+
+===== PAGE 78 =====
+[ Registrar aquí los defectos observados durante la ejecución manual de los 
+escenarios, con su severidad y frecuencia. Si no se hallaron defectos bloqueantes, 
+indicarlo explícitamente. ] 
+Notas: 
+• Parametrizar el rango de velocidad (PPM) por grado escolar (hoy es fijo 80–120 para 
+todos). 
+• Completar el banco de textos de lectura administrable por el docente (HU -27, 
+pendiente). 
+• Medir el WER del reconocedor con transcripción humana de referencia (validación 
+empírica de la meta OD2 < 10%). 
+• Realizar una evaluación de usabilidad con usuarios (p. ej. SUS) con docentes y 
+estudiantes.
+
+===== PAGE 79 =====
+Anexo L — Pruebas End-to-End (E2E) 
+Documento de Pruebas End-to-End (E2E) 
+Sistema de Retroalimentación por Voz (SRV) basado en IA para la evaluación 
+de la fluidez de oratoria en educación primaria 
+I.E. Juan José Farfán – Lancones, Piura | UPAO 2026 
+Elaborado por: Lezcano Saavedra, Anthony; Arévalo Espinoza, Ramdhum 
+ 
+Tipo de prueba a realizar: Pruebas End-to-End (flujo completo en navegador 
+real) 
+1. Descripción 
+Se valida el sistema completo funcionando en conjunto — frontend (React 
++ Vite) y backend (FastAPI) — automatizando un navegador real que reproduce 
+el recorrido del usuario: registro, inicio de sesión, práctica con grabación, 
+resultados, historial, reporte PDF y panel del docente. A diferencia de las pruebas 
+de funcionalidad (que llaman a la API direct amente), aquí se ejercita la interfaz 
+gráfica y la integración cliente–servidor tal como la vive el usuario final. 
+• Herramienta recomendada: Playwright (@playwright/test). Alternativa: 
+Cypress. 
+• Motivo: Playwright maneja permisos de micrófono e inyección de audio 
+falso, soporta varios navegadores y se integra bien en Windows. 
+• Estado actual: PENDIENTE DE IMPLEMENTAR (no existe suite E2E 
+automatizada en el repositorio). Este documento es el plan para crearla; 
+los mismos flujos pueden ejecutarse también de forma manual (E2E 
+manual = caja negra). 
+ 
+2. Requisitos previos (qué se necesita) 
+• Node.js instalado (ya presente para el frontend). 
+• Instalar Playwright:  cd frontend  →  npm i -D @playwright/test  →  npx 
+playwright install
+
+===== PAGE 80 =====
+• Backend en ejecución (uvicorn main:app) apuntando a una BD de prueba 
+aislada (variable DATABASE_URL a un SQLite temporal, reutilizando el 
+patrón de conftest.py). 
+• Frontend en ejecución (npm run dev, o build + npm run preview) apuntando 
+a ese backend. 
+• Datos semilla: un usuario alumno y un usuario docente (p. ej. creados vía 
+POST /auth/register en un paso de setup global). 
+• Audios de muestra para inyectar en el micrófono (ya existen: 
+backend/test_audio_d1.wav, test_mic_d1_full.wav). Para modo lectura, un 
+TextoLectura sembrado en la BD. 
+• Micrófono simulado: lanzar Chromium con audio falso desde archivo — flags 
+'--use-fake-device-for-media-stream' y ' --use-file-for-fake-audio-
+capture=<ruta.wav>'. 
+ 
+3. Configuración sugerida (playwright.config) 
+Se recomienda que Playwright levante automáticamente back y front mediante 
+la sección 'webServer', conceda el permiso de micrófono ('permissions: 
+["microphone"]') y lance el navegador con los flags  de audio falso. La baseURL 
+apunta al frontend (p. ej. http://localhost:5173) y el backend a 
+http://localhost:8000. 
+ 
+4. Escenarios E2E 
+# Flujo E2E Pasos principales Verificación (aserción) 
+E1 Registro de 
+usuario 
+Abrir /login → alternar a 
+registro → llenar datos 
+válidos → enviar 
+Redirige autenticado; usuario creado 
+(username, no email) 
+E2 Login y 
+logout 
+Ingresar credenciales 
+válidas / inválidas 
+Válidas: entra al área privada. 
+Inválidas: mensaje de error, no entra
+
+===== PAGE 81 =====
+E3 RBAC en la 
+UI 
+Alumno intenta abrir 
+/docente; docente abre 
+/docente 
+Alumno bloqueado/redirigido; docente 
+ve el panel 
+E4 Práctica y 
+grabación 
+Ir a /practica, conceder 
+micrófono, grabar (audio 
+inyectado), detener 
+La onda (WaveSurfer) se dibuja; el 
+botón Analizar se habilita 
+E5 Análisis 
+modo libre 
+Enviar la grabación a 
+analizar 
+Se muestran las 3 dimensiones, 
+puntaje global y estrellas 
+E6 Sesión 
+inválida 
+Grabar audio muy corto / 
+silencio y analizar 
+Mensaje 'No detectamos suficiente 
+voz…'; no se guarda la sesión 
+E7 Modo 
+lectura / 
+fidelidad 
+Elegir modo lectura, 
+seleccionar texto, leerlo 
+y analizar 
+Se muestra el % de fidelidad de 
+lectura 
+E8 Historial y 
+gráficos 
+Ir a /historial tras varias 
+sesiones 
+Se listan las sesiones y se dibujan los 
+gráficos (Chart.js) 
+E9 Reporte 
+PDF 
+Generar/descargar el 
+reporte de una sesión 
+Se descarga un PDF no vacío 
+E10 Panel del 
+docente 
+Docente entra a 
+/docente y abre un 
+alumno 
+Ve la lista de alumnos y el detalle de 
+sus sesiones 
+ 
+5. Datos de prueba 
+Recurso 
+ 
+Valor sugerido 
+Alumno username 'anaeele', password 'clave12345', rol alumno 
+Docente username 'profcarlos', password 'clave12345', rol docente 
+Audio válido backend/test_mic_d1_full.wav (≥ 10 palabras, ≥ 5 s) 
+Audio inválido clip < 5 s o silencio, para el escenario E6
+
+===== PAGE 82 =====
+Texto de lectura TextoLectura sembrado en la BD de prueba 
+6. Criterio de aceptación 
+1. Los 10 escenarios deben terminar en verde (passed) en al menos Chromium. 
+2. Cada corrida parte de una BD limpia y sembrada (aislamiento). 
+3. Se adjuntan las trazas/vídeos que Playwright genera ante fallos como 
+evidencia. 
+ 
+7. Resultado de la ejecución 
+Fecha de ejecución: 18/07/2026 
+1. Entorno de ejecución: Windows 11; Node v24.15.0; Playwright 1.61.1 
+(Chromium). Backend FastAPI y frontend Vite levantados 
+automáticamente por Playwright; BD SQLite de prueba aislada 
+(srv_e2e.db). 
+2. Alcance ejecutado: 5 escenarios E2E automatizados de flujo ligero (E1 
+registro, E2 login válido e inválido, E3 RBAC alumno y docente). El 
+escenario de análisis de audio (E4 –E5, pipeline pesado) queda como 
+ejecución opcional/manual, según la Sección 2. 
+3. Resultado global: 5 escenarios superados (passed). Sin fallos. 
+Salida de la consola (playwright test, reporter=list): 
+$ npx playwright test auth.spec.js --reporter=list 
+Running 5 tests using 1 worker 
+ 
+  ok 1 [chromium] E1: registro de usuario con datos validos (4.8s) 
+  ok 2 [chromium] E2: login con credenciales validas (2.2s) 
+  ok 3 [chromium] E2: login con contrasena incorrecta muestra error (1.8s) 
+  ok 4 [chromium] E3: alumno no accede al panel del docente (2.0s) 
+  ok 5 [chromium] E3: docente accede a su panel (2.1s) 
+ 
+  5 passed (25.7s)
+
+===== PAGE 83 =====
+E1: Registro de usuario con datos validos  
+En que consiste: desde la pantalla de login, se pulsa "Soy nuevo", se completan nombre, apellido, usuario 
+y contraseña, y se crea la cuenta. Verifica que tras el registro el usuario quede autenticado (redirección a 
+/modos) y que el token se guarde en el navegador. 
+Resultado: Superada. El registro redirige a /modos y el token queda almacenado. El alta de usuarios 
+funciona correctamente 
+ 
+E2: Login con credenciales validas
+
+===== PAGE 84 =====
+En que consiste: con un usuario ya registrado, se inicia sesion por la interfaz con usuario y contrasena 
+correctos y se comprueba el acceso. 
+Resultado: Superada. El login valido redirige a /modos. El acceso con credenciales correctas es exitoso. 
+ 
+ 
+E2: Login con contrasena incorrecta muestra error (auth.spec.js:31, 2.3 s) 
+En que consiste: se intenta iniciar sesion con una contrasena erronea y se verifica que el sistema muestre 
+un mensaje de error y no permita el ingreso. 
+Resultado: Superada. Aparece el mensaje de error y el usuario permanece en /login. Las credenciales 
+invalidas se rechazan correctamente.
+
+===== PAGE 85 =====
+E3: El alumno no accede al panel del docente  
+En que consiste: un usuario con rol alumno inicia sesion e intenta entrar por URL directa a /docente. Verifica 
+que la ruta protegida lo bloquee. 
+Resultado: Superada. El alumno es expulsado de /docente. El control de acceso por rol impide el acceso 
+no autorizado. 
+ 
+ 
+E3: El docente accede a su panel  
+En que consiste: un usuario con rol docente inicia sesion y se comprueba que si llegue a su panel. 
+Resultado: Superada. El docente accede a /docente. El permiso correcto segun el rol se concede.
+
+===== PAGE 86 =====
+Esc1: Registro  
+En que consiste: reproduce el registro con datos validos y luego con un dato invalido (usuario con numeros), 
+capturando ambas pantallas. Verifica la validacion de entrada del formulario. 
+Resultado: Superada. Se muestra el mensaje "solo puede tener letras" ante el dato invalido 
+ 
+ 
+Esc2: Login  
+En que consiste: recorre el login mostrando la pantalla inicial, el intento con credenciales incorrectas con su 
+error y el acceso correcto, capturando cada estado. 
+Resultado: Superada. Error visible ante credenciales erróneas y acceso exitoso con las correctas hacia 
+/modos.
+
+===== PAGE 87 =====
+Esc3-7: RBAC y panel del docente  
+En que consiste: prepara varios usuarios (alumnos y un docente), comprueba que el alumno sea bloqueado 
+de /docente y que el docente acceda a su panel con la lista de alumnos, capturando ambos casos. 
+Resultado: Superada. Alumno bloqueado y docente con acceso a su panel.  
+ 
+ 
+Esc4: Pantalla de grabación  
+En que consiste: tras iniciar sesion, entra a la practica en modo libre, pulsa "Empezar a hablar" e inicia la 
+grabacion (el microfono se simula con un audio real inyectado). Verifica que aparezca el estado de 
+grabacion. 
+Resultado: Superada. Aparece el banner "GRABANDO".
+
+===== PAGE 88 =====
+Las 9 pruebas de extremo a extremo se ejecutaron con 100% de exito, cubriendo registro, autenticacion  
+valida e invalida, control de acceso por rol y grabacion de voz, sobre frontend y backend reales.
+
+===== PAGE 89 =====
+Anexo M — Pruebas de Capacidad y Rendimiento (Apache JMeter) 
+Informe de Pruebas de Capacidad y Rendimiento (Apache JMeter) 
+Sistema de Retroalimentación por Voz (SRV) basado en IA — UPAO 2026 
+I.E. Juan José Farfán – Lancones, Piura 
+Elaborado por: Lezcano Saavedra, Anthony; Arévalo Espinoza, Ramdhum 
+ 
+1. Objetivo 
+Evaluar el comportamiento del backend del SRV bajo carga concurrente 
+creciente de 60 usuarios , midiendo tiempo de respuesta, throughput y porcentaje de 
+error, para determinar su capacidad y el punto en que el rendimiento se degrada. Se 
+distingue entre un endpoint ligero (autenticación) y el endpoint pesado de análisis de 
+audio, intensivo en CPU (faster-whisper + Praat + spaCy/BETO). 
+ 
+2. Entorno de prueba 
+• Fecha de ejecución: 18/07/2026 
+• Herramienta de carga: Apache JMeter 5.6.3 (modo no-GUI) sobre Java 23.0.2 
+• Backend bajo prueba: Producción en Railway  (plan Hobby) — https://srv-
+oratoria-ia-production.up.railway.app 
+• Base de datos: PostgreSQL (Supabase) 
+• Plan de pruebas: jmeter/SRV-carga.jmx (parametrizable por línea de comandos 
+con -J) 
+• Usuario de carga: cargauno (creado vía POST /auth/register para las pruebas) 
+3. Escenarios ejecutados 
+Se aplicó carga creciente (escalado) a cada endpoint para observar la evolución del 
+rendimiento. 
+Escenario Endpoint 
+Usuarios 
+(VU) 
+Ramp-
+up 
+Iteraciones Peticiones 
+Calentamiento POST /auth/login 5 5 s 3 15 
+A1 — Login POST /auth/login 30 20 s 5 150
+
+===== PAGE 90 =====
+A2 — Login (carga 
+alta) 
+POST /auth/login 60 30 s 5 300 
+B1 — Análisis de audio 
+POST /audio/analizar 
+(+login) 
+3 10 s 2 6 análisis 
+B2 — Análisis (carga 
+alta) 
+POST /audio/analizar 
+(+login) 
+6 12 s 2 12 análisis 
+ 
+4. Resultados 
+4.1 Login — escalado 5 → 30 → 60 usuarios 
+Usuarios 
+(VU) 
+Peticiones Errores Media p95 Máximo Throughput 
+5 15 0 % 1 797 ms 6 222 ms 6 222 ms 1,97 req/s 
+30 150 0 % 1 810 ms 5 602 ms 8 953 ms 5,11 req/s 
+60 300 0 % 686 ms 820 ms 1 795 ms 9,03 req/s 
+ 
+Salida del sumarizador de JMeter (60 usuarios): 
+summary = 300 in 00:00:34 = 8.9/s  Avg: 686  Min: 589  Max: 1795  Err: 0 (0.00%) 
+ 
+ 
+En la prueba de carga ligera (60 usuarios, 300 peticiones a /auth/login) el sistema respondió con 0% de 
+error y una mediana de 616 ms (95% ≤ 820 ms), sosteniendo 9 req/s. El índice APDEX (0.487) resulta bajo 
+debido a que el umbral de tolerancia configurado  (500 ms) es inferior al costo mínimo del hashing  Argon2 
+usado en la autenticación y no a una degradación del servicio.
+
+===== PAGE 91 =====
+Nota: la mayor latencia observada con 5 y 30 usuarios se debió al arranque en frío del 
+contenedor; ya en caliente (60 usuarios) el login respondió más rápido y con mayor 
+throughput. 
+4.2 Análisis de audio — escalado 3 → 6 usuarios 
+Usuarios 
+(VU) 
+Análisis Errores Media Máximo Throughput 
+3 6 0 % 20 902 ms (~21 s) 26 086 ms 0,11 req/s 
+6 12 0 % 36 294 ms (~36 s) 52 556 ms 0,11 req/s 
+Salida del sumarizador de JMeter (6 usuarios): 
+summary = 24 in 00:01:48 = 0.2/s  Avg: 20704  Min: 600  Max: 52556  Err: 0 (0.00%) 
+(24 muestras = 12 análisis + 12 logins previos para obtener el token) 
+ 
+ 
+En la prueba pesada (6 usuarios sobre /audio/analizar) el sistema mantuvo 0% de error, pero el tiempo 
+medio se disparó a 36.3 s (máx 52.6 s) con un throughput de 0.11 req/s. La mediana superior al promedio 
+evidencia encolamiento por saturación de CPU: el pipeline de IA (Whisper medium en CPU sobre un único 
+proceso uvicorn) es CPU -bound, y su carga incluso degradó el login concurrente de 0.69 s a 5.1 s. El 
+sistema es funcional y estable a baja concurrencia, pero su capacidad en el endpoint de análisis está 
+limitada por CPU y requeriría escalado horizontal (más workers/instancias) o GPU p ara soportar más 
+usuarios simultáneos 
+5. Análisis de resultados 
+• Fiabilidad: 0 % de error en TODOS los niveles de carga (login hasta 60 VU y análisis 
+hasta 6 VU). El sistema no presentó fallos ni timeouts bajo la carga probada.
+
+===== PAGE 92 =====
+• Login: escala muy bien. Con 60 usuarios en caliente la media bajó a 686 ms, el p95 
+a 820 ms y el throughput subió a 9 req/s. La latencia alta observada con 5 –30 
+usuarios correspondió al arranque en frío del contenedor, no a saturación. 
+• Análisis de audio: es el cuello de botella. Al duplicar los usuarios (3 → 6), la latencia 
+media creció de ~21 s a ~36 s (máx 52 s) pero el throughput se mantuvo estancado 
+en ~0,11 req/s. Esto es el patrón clásico de saturación de CPU: agregar concurrencia 
+solo aumenta la cola de espera, no la capacidad de procesamiento. En la práctica, 
+el pipeline procesa alrededor de UN análisis a la vez. 
+• El plan Hobby de Railway impone el límite de CPU: el sistema es estable pero el 
+análisis de audio no se beneficia de más concurrencia. 
+6. Hallazgos y defectos detectados 
+# Hallazgo Severidad Observación 
+1 
+Login con usuario inexistente devuelve 
+HTTP 500 en lugar de 401 
+Media 
+Con usuario válido responde 200 y con 
+contraseña incorrecta 401; el fallo 
+ocurre solo cuando el usuario no existe. 
+2 
+El análisis de audio no escala con la 
+concurrencia 
+Informativa 
+Throughput fijo en ~0,11 req/s; a más 
+usuarios, mayor latencia (hasta 52 s) sin 
+más rendimiento (saturación de CPU). 
+3 Arranque en frío del contenedor Baja 
+Las primeras peticiones tras un periodo 
+inactivo son notablemente más lentas 
+(hasta ~6–9 s en login). 
+ 
+7. Conclusiones 
+• El sistema es ESTABLE: soportó 60 usuarios concurrentes en login y 6 análisis 
+simultáneos sin un solo error (0 %) ni timeouts. 
+• Login: capacidad sólida. En caliente atiende ≥ 60 usuarios concurrentes con un p95 
+por debajo de 1 s y un throughput de ~9 req/s. 
+• Análisis de audio: la capacidad práctica es de ~1 análisis simultáneo (~0,11 req/s, 
+21–36 s por análisis según la concurrencia). Es el componente que define el límite 
+de capacidad del sistema. 
+• No se hallaron fallos bloqueantes bajo carga; el único defecto funcional es el HTTP 
+500 del login con usuario inexistente.
+
+===== PAGE 93 =====
+Anexo N — Matriz de Casos de Uso 
+Matriz de 25 casos de prueba funcionales (Sprints 1 y 2). Estado global: 25/25 PASE. A continuacion se incluye la matriz resumen y el detalle 
+paso a paso de cada caso. 
+N.1 Matriz resumen de casos de prueba 
+Caso de 
+Prueba # 
+Casos de Uso Area/Mòdulo Estado Severidad Comentarios 
+1 Interfaz de Registro de usuario Registro / Autenticación PASE ALTO 
+Se subsanó el acceso a 
+nombre por caracteres 
+especiales 
+1.1 Registro con datos válidos Registro / Autenticación PASE ALTO - 
+1.2 
+Validaciones del formulario de 
+registro (datos inválidos) 
+Registro / Autenticación PASE ALTO - 
+2 Interfaz de Inicio de sesión 
+Inicio de sesión / 
+Autenticación 
+PASE ALTO - 
+2.1 
+Inicio de sesión con credenciales 
+válidas y redirección por rol 
+Inicio de sesión / 
+Autenticación 
+PASE ALTO - 
+2.2 
+Validaciones de inicio de sesión 
+con credenciales inválidas 
+Inicio de sesión / 
+Autenticación 
+PASE ALTO - 
+3 
+Interfaz de control de acceso por 
+roles (RBAC) 
+Seguridad / Acceso PASE ALTO 
+Cumple; no hay 
+redirección automática
+
+===== PAGE 94 =====
+desde rutas no 
+autorizadas 
+3.1 
+Restricción de acceso a rutas 
+según el rol 
+Seguridad / Acceso PASE ALTO - 
+4 
+Interfaz de inicio: selección de 
+modo de práctica 
+Inicio / Navegación PASE ALTO - 
+4.1 
+Visualización y selección de modo 
+(Lectura / Expresión libre) 
+Inicio / Navegación PASE ALTO - 
+5 Interfaz de práctica – Modo Lectura Práctica / Lectura PASE ALTO - 
+5.1 
+Selección de texto guía, grabación 
+y onda en tiempo real 
+Práctica / Lectura PASE ALTO - 
+5.2 
+Validación de fidelidad de lectura 
+(WER) 
+Práctica / Lectura PASE MEDIO - 
+6 
+Interfaz de práctica – Modo 
+Expresión libre 
+Práctica / Expresión libre PASE ALTO - 
+6.1 
+Selección de tema, grabación y 
+transcripción 
+Práctica / Expresión libre PASE ALTO - 
+6.2 
+Validaciones de captura de audio 
+(permiso, audio corto/silencio, anti-
+ruido) 
+Práctica / Expresión libre PASE MEDIO 
+En ruido muy fuerte no 
+se ha probado; en 
+condiciones normales 
+cumple 
+7 Interfaz de resultado de sesión Resultados PASE ALTO -
+
+===== PAGE 95 =====
+7.1 
+Visualización de onda y puntaje 
+global con estrellas (validación de 
+rango y ponderación) 
+Resultados PASE ALTO - 
+8 
+Interfaz de detalle de resultados 
+por dimensión 
+Resultados PASE ALTO - 
+8.1 
+Visualización de subpuntajes y 
+métricas de las tres dimensiones 
+(validación de presencia y rango) 
+Resultados PASE ALTO - 
+9 Interfaz de reporte en PDF Reportes PASE ALTO - 
+9.1 
+Generación y contenido del reporte 
+exportable 
+Reportes PASE ALTO - 
+10 Interfaz de historial del usuario Historial PASE MEDIO - 
+10.1 
+Historial con gráficos de progreso 
+por dimensión 
+Historial PASE MEDIO - 
+11 Interfaz de panel del docente Panel docente PASE ALTO - 
+11.1 
+Listado de estudiantes con 
+promedio y prácticas 
+Panel docente PASE ALTO - 
+11.2 
+Detalle del historial de estudiante y 
+consejos con IA 
+Panel docente PASE MEDIO 
+Se visualizan las 
+métricas y además la 
+transcripción y la 
+valoración
+
+===== PAGE 96 =====
+N.2 Detalle de los casos de prueba 
+Caso de Prueba 1 
+Cada flujo de trabajo,puede tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 1.1   
+Area de Prueba: Interfaz de Registro de usuario   
+Nombre: Registro con datos válidos   
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: 
+Ingrese cada paso requerido en 
+el proceso a continuación. 
+Datos 
+Para cada paso en el flujo de trabajo, 
+introduzca los datos específicos que deben 
+introducirse para la prueba. Por ejemplo, 
+seleccione un cliente de la Sucursal x. 
+Resultado esperado 
+Introduzca los detalles de los 
+resultados que espera ver cuando 
+introduzca los datos de la prueba. 
+Esto es lo que se utiliza para 
+validar la prueba, así que incluye 
+información sobre los campos 
+que deben predeterminarse o 
+calcularse, etc. Incluye cualquier 
+cosa que sea resultado de una 
+personalización o guión 
+Resultado de la prueba 
+Si los resultados de la prueba 
+cumplen con las expectativas, 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del 
+resultado esperado.
+
+===== PAGE 97 =====
+Paso 1 
+Acceder a la pantalla de registro 
+Datos: URL /registro 
+Se muestra el formulario de 
+registro con todos los campos 
+PASE 
+Paso 2 
+Ingresar datos válidos 
+Datos: Nombre='Ana'; Apellido='Pérez'; 
+Usuario='ana.perez'; 
+Contraseña='Clave#2026'; Rol='Alumno'; 
+Grado='1ro'; Sección='A' 
+Los campos aceptan los datos sin 
+errores de validación 
+Se subsanó el acceso a nombre 
+por caracteres especiales 
+Paso 3 
+Enviar el formulario 
+Datos: Click 'Registrarse' 
+Usuario creado; contraseña 
+cifrada; username único; 
+redirección diferenciada por rol 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Nro de Caso 1.2   
+Area de Prueba: Interfaz de Registro de usuario   
+Nombre: 
+Validaciones del formulario de registro (datos 
+inválidos) 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 
+Acceder a la pantalla de registro 
+Datos: URL /registro 
+El formulario es visible PASE
+
+===== PAGE 98 =====
+Paso 2 
+Ingresar usuario inválido y contraseña débil 
+Datos: Usuario='ana@' (carácter no 
+permitido); Contraseña='123' (menos de 6) 
+Se muestran mensajes de 
+validación en pantalla; el 
+formulario no se envía 
+PASE 
+Paso 3 Dejar campos obligatorios vacíos 
+Se marcan los campos 
+requeridos; no permite continuar 
+PASE 
+Paso 4 Registrar un username ya existente 
+El sistema rechaza por duplicado 
+y muestra el mensaje 
+correspondiente 
+PASE 
+Paso 5 Forzar el envío de la petición al backend 
+El backend valida y rechaza la 
+petición inválida 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Caso de Prueba 2 
+Cada flujo de trabajo,puede tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 2.1   
+Area de Prueba: Interfaz de Inicio de sesión   
+Nombre: 
+Inicio de sesión con credenciales válidas y 
+redirección por rol 
+  
+Rol Usado: Alumno / Docente   
+Asignado A:  Equipo QA (Lezcano / Arévalo)
+
+===== PAGE 99 =====
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: 
+Ingrese cada paso requerido en el 
+proceso a continuación. 
+Datos 
+Para cada paso en el flujo de trabajo, 
+introduzca los datos específicos que deben 
+introducirse para la prueba. Por ejemplo, 
+seleccione un cliente de la Sucursal x. 
+Resultado esperado 
+Introduzca los detalles de los 
+resultados que espera ver cuando 
+introduzca los datos de la prueba. 
+Esto es lo que se utiliza para 
+validar la prueba, así que incluye 
+información sobre los campos que 
+deben predeterminarse o 
+calcularse, etc. Incluye cualquier 
+cosa que sea resultado de una 
+personalización o guión 
+Resultado de la prueba 
+Si los resultados de la prueba 
+cumplen con las expectativas, 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del 
+resultado esperado. 
+Paso 1 
+Acceder a la pantalla de inicio de sesión 
+Datos: URL /login 
+Se muestra el formulario de inicio 
+de sesión 
+PASE 
+Paso 2 
+Ingresar credenciales válidas de Alumno 
+Datos: Usuario='alumno.demo'; Contraseña 
+válida 
+Sesión iniciada; redirección a la 
+pantalla de inicio del alumno 
+PASE 
+Paso 3 
+Ingresar credenciales válidas de Docente 
+Datos: Usuario='docente.demo'; 
+Contraseña válida 
+Sesión iniciada; redirección al 
+panel del docente 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Nro de Caso 2.2   
+Area de Prueba: Interfaz de Inicio de sesión
+
+===== PAGE 100 =====
+Nombre: 
+Validaciones de inicio de sesión con 
+credenciales inválidas 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 
+Acceder a la pantalla de inicio de sesión 
+Datos: URL /login 
+El formulario es visible PASE 
+Paso 2 Usuario correcto y contraseña incorrecta 
+Mensaje de credenciales 
+inválidas; no inicia sesión 
+PASE 
+Paso 3 Usuario inexistente 
+Mensaje de credenciales 
+inválidas; no revela si el usuario 
+existe 
+PASE 
+Paso 4 Enviar con campos vacíos 
+Validación de campos 
+obligatorios; no envía 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Caso de Prueba 3 
+Cada flujo de trabajo  puede tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 3.1
+
+===== PAGE 101 =====
+Area de Prueba: 
+Interfaz de control de acceso por roles 
+(RBAC) 
+  
+Nombre: Restricción de acceso a rutas según el rol   
+Rol Usado: Alumno / Docente   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: 
+Ingrese cada paso requerido en el 
+proceso a continuación. 
+Datos 
+Para cada paso en el flujo de trabajo, 
+introduzca los datos específicos que 
+deben introducirse para la prueba. Por 
+ejemplo, seleccione un cliente de la 
+Sucursal x. 
+Resultado esperado 
+Introduzca los detalles de los 
+resultados que espera ver cuando 
+introduzca los datos de la prueba. 
+Esto es lo que se utiliza para 
+validar la prueba, así que incluye 
+información sobre los campos que 
+deben predeterminarse o 
+calcularse, etc. Incluye cualquier 
+cosa que sea resultado de una 
+personalización o guión 
+Resultado de la prueba 
+Si los resultados de la prueba 
+cumplen con las expectativas, 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del 
+resultado esperado. 
+Paso 1 
+Iniciar sesión como Alumno 
+Datos: Usuario='alumno.demo' 
+Sesión iniciada como Alumno PASE 
+Paso 2 
+Intentar acceder a una ruta de docente 
+Datos: URL /docente 
+Acceso denegado (no se muestra 
+el panel del docente) 
+Cumple; sin embargo no hay 
+redirección automática desde la 
+ruta no autorizada
+
+===== PAGE 102 =====
+Paso 3 
+Iniciar sesión como Docente y acceder al 
+panel 
+Datos: URL /docente 
+El panel del docente se muestra 
+correctamente 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Nro de Caso 4.1   
+Area de Prueba: 
+Interfaz de inicio: selección de modo de 
+práctica 
+  
+Nombre: 
+Visualización y selección de modo 
+(Lectura / Expresión libre) 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 
+Acceder a la pantalla de inicio 
+Datos: URL /inicio (sesión de alumno) 
+Se muestra la pantalla de inicio 
+con los modos disponibles 
+PASE 
+Paso 2 Verificar las opciones de modo 
+Se visualizan las opciones 
+'Lectura' y 'Expresión libre' 
+PASE 
+Paso 3 Seleccionar 'Lectura' 
+Navega a la interfaz de modo 
+lectura 
+PASE 
+Paso 4 Seleccionar 'Expresión libre' 
+Navega a la interfaz de expresión 
+libre 
+PASE 
+Problemas encontrados:    
+Otros comentarios:
+
+===== PAGE 103 =====
+Caso de Prueba 4 
+Cada flujo de trabajo,puede tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 5.1   
+Area de Prueba: Interfaz de práctica – Modo Lectura   
+Nombre: 
+Selección de texto guía, grabación y 
+onda en tiempo real 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: 
+Ingrese cada paso requerido en el 
+proceso a continuación. 
+Datos 
+Para cada paso en el flujo de 
+trabajo, introduzca los datos 
+específicos que deben introducirse 
+para la prueba. Por ejemplo, 
+seleccione un cliente de la Sucursal 
+x. 
+Resultado esperado 
+Introduzca los detalles de los 
+resultados que espera ver cuando 
+introduzca los datos de la prueba. 
+Esto es lo que se utiliza para validar 
+la prueba, así que incluye 
+información sobre los campos que 
+deben predeterminarse o calcularse, 
+etc. Incluye cualquier cosa que sea 
+resultado de una personalización o 
+guión 
+Resultado de la prueba 
+Si los resultados de la prueba 
+cumplen con las expectativas, 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del resultado 
+esperado. 
+Paso 1 Ingresar al modo Lectura Se muestra el selector de texto guía PASE
+
+===== PAGE 104 =====
+Paso 2 Seleccionar un texto guía 
+El texto se muestra para leer en voz 
+alta 
+PASE 
+Paso 3 
+Conceder permiso de micrófono y 
+grabar 
+Datos: Leer ~10 s 
+La onda de audio se visualiza en 
+tiempo real 
+PASE 
+Paso 4 
+Detener la grabación 
+Datos: Click 'Detener' 
+Se conserva el audio y se muestra la 
+onda final 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Nro de Caso 5.2   
+Area de Prueba: Interfaz de práctica – Modo Lectura   
+Nombre: 
+Validación de fidelidad de lectura 
+(WER) 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 Completar la lectura del texto guía Se transcribe el audio grabado PASE 
+Paso 2 
+Comparar la transcripción con el 
+texto guía 
+Se calcula la fidelidad/WER frente al 
+texto de referencia 
+PASE 
+Paso 3 Verificar el valor mostrado 
+El porcentaje de fidelidad está en el 
+rango 0–100 % y es coherente con 
+la lectura 
+PASE 
+Problemas encontrados:
+
+===== PAGE 105 =====
+Otros comentarios:    
+Caso de Prueba 5 
+Cada flujo de trabajo  puede tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 6.1   
+Area de Prueba: 
+Interfaz de práctica – Modo 
+Expresión libre 
+  
+Nombre: 
+Selección de tema, grabación y 
+transcripción 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: 
+Ingrese cada paso requerido en el 
+proceso a continuación. 
+Datos 
+Para cada paso en el flujo de 
+trabajo, introduzca los datos 
+específicos que deben introducirse 
+para la prueba. Por ejemplo, 
+seleccione un cliente de la Sucursal 
+x. 
+Resultado esperado 
+Introduzca los detalles de los 
+resultados que espera ver cuando 
+introduzca los datos de la prueba. 
+Esto es lo que se utiliza para validar 
+la prueba, así que incluye 
+información sobre los campos que 
+deben predeterminarse o calcularse, 
+etc. Incluye cualquier cosa que sea 
+Resultado de la prueba 
+Si los resultados de la prueba 
+cumplen con las expectativas, 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del resultado 
+esperado.
+
+===== PAGE 106 =====
+resultado de una personalización o 
+guión 
+Paso 1 Ingresar al modo Expresión libre Se muestra el tema propuesto PASE 
+Paso 2 
+Grabar un discurso sobre el tema 
+Datos: Hablar ~30 s 
+La onda se visualiza en tiempo real PASE 
+Paso 3 Detener y procesar 
+Conversión a WAV 16 kHz y 
+transcripción (faster-whisper) 
+PASE 
+Paso 4 Verificar la transcripción 
+El texto transcrito corresponde al 
+audio grabado 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Nro de Caso 6.2   
+Area de Prueba: 
+Interfaz de práctica – Modo 
+Expresión libre 
+  
+Nombre: Validaciones de captura de audio   
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 Denegar el permiso de micrófono 
+Se muestra un mensaje indicando 
+que se requiere el permiso; no inicia 
+la grabación 
+PASE
+
+===== PAGE 107 =====
+Paso 2 
+Grabar un audio muy corto (<3 s) o 
+en silencio 
+El sistema advierte que el audio es 
+insuficiente / sin voz y no genera 
+resultados inválidos 
+PASE 
+Paso 3 
+Grabar con ruido de fondo y filtros 
+anti-ruido activos 
+Se aplican los filtros y la 
+transcripción se mantiene utilizable 
+En ruido muy fuerte no se ha 
+probado; en condiciones normales 
+cumple sin problema 
+Problemas encontrados:    
+Otros comentarios:    
+Caso de Prueba 6 
+Cada flujo de trabajo,puede tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 7.1   
+Area de Prueba: Interfaz de resultado de sesión   
+Nombre: 
+Visualización de onda y puntaje 
+global con estrellas 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba:  
+Ingrese cada paso requerido en el 
+proceso a continuación. 
+Datos 
+Para cada paso en el flujo de trabajo, 
+introduzca los datos específicos que 
+Resultado esperado  
+Introduzca los detalles de los resultados 
+que espera ver cuando introduzca los 
+Resultado de la prueba  
+Si los resultados de la prueba 
+cumplen con las expectativas,
+
+===== PAGE 108 =====
+deben introducirse para la prueba. Por 
+ejemplo, seleccione un cliente de la 
+Sucursal x. 
+datos de la prueba. Esto es lo que se 
+utiliza para validar la prueba, así que 
+incluye información sobre los campos 
+que deben predeterminarse o 
+calcularse, etc. Incluye cualquier cosa 
+que sea resultado de una 
+personalización o guión 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del 
+resultado esperado. 
+Paso 1 Finalizar una práctica válida 
+Se muestra la pantalla de resultado 
+con la onda de audio 
+PASE 
+Paso 2 Verificar el puntaje global 
+Se muestra el puntaje global 
+ponderado (D1, D2, D3) dentro del 
+rango definido 
+PASE 
+Paso 3 
+Verificar la representación en 
+estrellas 
+Las estrellas corresponden al puntaje 
+global calculado 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Nro de Caso 8.1   
+Area de Prueba: 
+Interfaz de detalle de resultados por 
+dimensión 
+  
+Nombre: 
+Visualización de subpuntajes y 
+métricas de las tres dimensiones 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1
+
+===== PAGE 109 =====
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 Abrir el detalle de la sesión 
+Se muestran las tres dimensiones: 
+Fluidez, Vocabulario/Coherencia y 
+Expresividad 
+PASE 
+Paso 2 Verificar los subpuntajes 
+Cada dimensión muestra su 
+subpuntaje dentro del rango válido 
+PASE 
+Paso 3 Verificar métricas de fluidez 
+Se muestran velocidad (PPM), pausas 
+y prosodia con valores coherentes 
+PASE 
+Paso 4 
+Verificar métricas de 
+vocabulario/coherencia 
+Se muestran riqueza léxica (TTR), 
+muletillas y coherencia con valores 
+coherentes 
+PASE 
+Paso 5 Verificar la expresividad 
+Se muestra el indicador de 
+expresividad vocal con valor coherente 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Caso de Prueba 7 
+Cada flujo de trabajo,puede  tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 9.1   
+Area de Prueba: Interfaz de reporte en PDF
+
+===== PAGE 110 =====
+Nombre: 
+Generación y contenido del reporte 
+exportable 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba:  
+Ingrese cada paso requerido en el 
+proceso a continuación. 
+Datos 
+Para cada paso en el flujo de trabajo, 
+introduzca los datos específicos que 
+deben introducirse para la prueba. 
+Por ejemplo, seleccione un cliente de 
+la Sucursal x. 
+Resultado esperado  
+Introduzca los detalles de los 
+resultados que espera ver cuando 
+introduzca los datos de la prueba. 
+Esto es lo que se utiliza para validar 
+la prueba, así que incluye 
+información sobre los campos que 
+deben predeterminarse o calcularse, 
+etc. Incluye cualquier  cosa que sea 
+resultado de una personalización o 
+guión 
+Resultado de la prueba  
+Si los resultados de la prueba 
+cumplen con las expectativas, 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del resultado 
+esperado. 
+Paso 1 
+Desde el resultado, generar el 
+reporte PDF 
+Se genera y descarga el archivo 
+PDF 
+PASE 
+Paso 2 Verificar el contenido 
+El PDF contiene puntaje global, 
+métricas por dimensión y 
+recomendaciones 
+PASE 
+Paso 3 Verificar el formato 
+El documento es legible y las 
+métricas coinciden con la sesión 
+PASE 
+Problemas encontrados:
+
+===== PAGE 111 =====
+Otros comentarios:    
+Nro de Caso 10.1   
+Area de Prueba: Interfaz de historial del usuario   
+Nombre: 
+Historial con gráficos de progreso 
+por dimensión 
+  
+Rol Usado: Alumno   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 Acceder al historial del usuario Se listan las prácticas anteriores PASE 
+Paso 2 Verificar los gráficos de progreso 
+Se muestran gráficos de progreso 
+por dimensión 
+PASE 
+Paso 3 Verificar la consistencia 
+Los valores del historial coinciden 
+con las sesiones realizadas 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Caso de Prueba 8 
+Cada flujo de trabajo,puede tener muchos casos de prueba. Hay dos plantillas de casos de prueba en blanco en esta página.  
+Copie y pegue una plantilla de caso de prueba en blanco tantas veces como sea necesario por sprint o por area  
+A medida que se completan las pruebas de cada caso de prueba para este flujo de trabajo, ingrese los datos correspondientes en la página Matriz de prueba.  
+Nro de Caso 11.1   
+Area de Prueba: Interfaz de panel del docente
+
+===== PAGE 112 =====
+Nombre: 
+Listado de estudiantes con 
+promedio y prácticas 
+  
+Rol Usado: Docente   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: 
+Ingrese cada paso requerido en el 
+proceso a continuación. 
+Datos 
+Para cada paso en el flujo de 
+trabajo, introduzca los datos 
+específicos que deben 
+introducirse para la prueba. Por 
+ejemplo, seleccione un cliente de 
+la Sucursal x. 
+Resultado esperado 
+Introduzca los detalles de los resultados 
+que espera ver cuando introduzca los datos 
+de la prueba. Esto es lo que se utiliza para 
+validar la prueba, así que incluye 
+información sobre los campos que deben 
+predeterminarse o calcularse, etc. Incluye 
+cualquier cosa que sea resultado de una 
+personalización o guión 
+Resultado de la prueba 
+Si los resultados de la prueba 
+cumplen con las expectativas, 
+introduzca PASE, de lo contrario 
+introduzca los detalles de los 
+resultados que difieren del 
+resultado esperado. 
+Paso 1 Iniciar sesión como Docente Se muestra el panel del docente PASE 
+Paso 2 Verificar el listado 
+Se listan los estudiantes con su promedio y 
+número de prácticas 
+PASE 
+Paso 3 Verificar los datos 
+Los promedios corresponden a las 
+prácticas de cada estudiante 
+PASE 
+Problemas encontrados:    
+Otros comentarios:    
+Nro de Caso 11.2   
+Area de Prueba: Interfaz de panel del docente
+
+===== PAGE 113 =====
+Nombre: 
+Detalle del historial de estudiante 
+y consejos con IA 
+  
+Rol Usado: Docente   
+Asignado A:  Equipo QA (Lezcano / Arévalo)   
+Usuario (Login): WalterC1 || WalterC1   
+Pasos del caso de prueba: Datos Resultado esperado Resultado de la prueba 
+Paso 1 Seleccionar un estudiante 
+Se muestra el detalle del historial del 
+estudiante 
+PASE 
+Paso 2 Verificar las métricas Se visualizan las métricas del estudiante 
+Se visualizan las métricas y 
+además otros datos como la 
+transcripción y la valoración 
+Paso 3 Verificar los consejos con IA 
+Se muestran recomendaciones/consejos 
+generados con IA 
+PASE 
+Problemas encontrados:    
+Otros comentarios:
+
+===== PAGE 114 =====

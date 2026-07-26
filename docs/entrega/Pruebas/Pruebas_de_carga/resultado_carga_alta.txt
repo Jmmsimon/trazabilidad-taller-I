@@ -1,0 +1,15 @@
+PRUEBA DE CARGA — Trazabilidad Académica API
+URL: http://127.0.0.1:8000/openapi.json
+Usuarios concurrentes: 50
+Requests por usuario: 10
+Total requests: 500
+Duración: 0.51 s
+Throughput aprox: 978.19 req/s
+Éxitos: 500/500 (100.00%)
+Latencia media: 40.4 ms
+Latencia p95: 58.6 ms
+Códigos HTTP: {200: 500}
+
+Criterios:
+  éxito >= 99%: PASS
+  media < 500ms (local): PASS

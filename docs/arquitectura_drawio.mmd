@@ -1,0 +1,58 @@
+%% Pegar en https://www.draw.io/ → Arrange → Insert → Advanced → Mermaid
+%% O en https://mermaid.live/ y exportar SVG
+
+flowchart TB
+  subgraph CLIENT["Cliente Web (Next.js 16 + React 19)"]
+    UI_E["Dashboard Estudiante\nDiscovery · Kanban · Analítica"]
+    UI_D["Dashboard Docente\nHitos · Git · Analítica · Auditoría CSV"]
+    UI_A["Dashboard Admin\nUsuarios · Roles"]
+  end
+
+  subgraph BFF["BFF / Proxies Next.js API Routes"]
+    P1["/api/proyectos/*"]
+    P2["/api/profesor/*"]
+    P3["/api/auth/*"]
+  end
+
+  subgraph API["Backend FastAPI :8000"]
+    EP["REST Endpoints\nproyectos · profesor · admin · webhook"]
+    BG["BackgroundTasks"]
+  end
+
+  subgraph AGENTS["Orquestación LangGraph"]
+    DIS["Discovery Graph\ndrafter → validator → PO"]
+    TRK["Tracking Graph\ndevops deep → competency\n→ analyst → reporter\n+ AUTO-KANBAN"]
+    AUD["Backlog Audit Graph\nparser CSV/Notion → github deep\n→ semantic match → semáforo\n(solo reporte)"]
+  end
+
+  subgraph EXT["Servicios externos"]
+    GH["GitHub REST API\ncommits · tree · snippets"]
+    LLM["LLM\nGemini / Claude"]
+    FB["Firebase\nAuth + Firestore"]
+  end
+
+  UI_E --> P1
+  UI_D --> P2
+  UI_A --> P2
+  UI_E --> P3
+  UI_D --> P3
+
+  P1 --> EP
+  P2 --> EP
+  P3 --> FB
+
+  EP --> BG
+  BG --> DIS
+  BG --> TRK
+  BG --> AUD
+
+  DIS --> LLM
+  DIS --> FB
+  TRK --> GH
+  TRK --> LLM
+  TRK --> FB
+  AUD --> GH
+  AUD --> LLM
+  AUD --> FB
+
+  EP --> FB

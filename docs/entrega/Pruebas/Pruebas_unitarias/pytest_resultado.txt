@@ -1,0 +1,51 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\JSIMON\.gemini\antigravity\scratch\trazabilidad-app\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\JSIMON\.gemini\antigravity\scratch\trazabilidad-app\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, langsmith-0.10.5
+collecting ... collected 41 items
+
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[done-Done] PASSED [  2%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[Hecho-Done] PASSED [  4%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[completado-Done] PASSED [  7%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[in progress-In Progress] PASSED [  9%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[en progreso-In Progress] PASSED [ 12%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[wip-In Progress] PASSED [ 14%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[todo-To Do] PASSED [ 17%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[por hacer-To Do] PASSED [ 19%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[backlog-To Do] PASSED [ 21%]
+tests/test_backlog_parser.py::TestNormalizeEstado::test_normaliza_estados[-To Do] PASSED [ 24%]
+tests/test_backlog_parser.py::TestNormalizeTipo::test_normaliza_tipos[HU-HU] PASSED [ 26%]
+tests/test_backlog_parser.py::TestNormalizeTipo::test_normaliza_tipos[Historia de Usuario-HU] PASSED [ 29%]
+tests/test_backlog_parser.py::TestNormalizeTipo::test_normaliza_tipos[Tarea-TA] PASSED [ 31%]
+tests/test_backlog_parser.py::TestNormalizeTipo::test_normaliza_tipos[Spike-SP] PASSED [ 34%]
+tests/test_backlog_parser.py::TestNormalizeTipo::test_normaliza_tipos[Habilitador-EN] PASSED [ 36%]
+tests/test_backlog_parser.py::TestNormalizeTipo::test_normaliza_tipos[Documentaci\xf3n-DO] PASSED [ 39%]
+tests/test_backlog_parser.py::TestNormalizeTipo::test_normaliza_tipos[Requisito No Func.-RN] PASSED [ 41%]
+tests/test_backlog_parser.py::TestFindCol::test_encuentra_titulo_en_espanol PASSED [ 43%]
+tests/test_backlog_parser.py::TestFindCol::test_sin_coincidencia_retorna_none PASSED [ 46%]
+tests/test_backlog_parser.py::TestStripBom::test_elimina_bom_utf8 PASSED [ 48%]
+tests/test_backlog_parser.py::TestParseCsv::test_parsea_csv_basico_coma PASSED [ 51%]
+tests/test_backlog_parser.py::TestParseCsv::test_parsea_csv_punto_y_coma PASSED [ 53%]
+tests/test_backlog_parser.py::TestParseCsv::test_csv_vacio_lanza_error PASSED [ 56%]
+tests/test_backlog_parser.py::TestParseCsv::test_sin_columna_titulo_lanza_error PASSED [ 58%]
+tests/test_backlog_parser.py::TestParseCsv::test_parse_backlog_source_csv PASSED [ 60%]
+tests/test_schemas.py::TestCompetencia::test_defaults PASSED             [ 63%]
+tests/test_schemas.py::TestCompetencia::test_nivel_invalido PASSED       [ 65%]
+tests/test_schemas.py::TestBacklogItem::test_estado_kanban_valido PASSED [ 68%]
+tests/test_schemas.py::TestDictToPropuesta::test_asigna_id_hito_si_falta PASSED [ 70%]
+tests/test_schemas.py::TestDictToPropuesta::test_roundtrip_propuesta PASSED [ 73%]
+tests/test_schemas.py::TestSemaforoColor::test_valores_enum PASSED       [ 75%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[0-rojo] PASSED [ 78%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[30-rojo] PASSED [ 80%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[31-naranja] PASSED [ 82%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[55-naranja] PASSED [ 85%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[56-amarillo] PASSED [ 87%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[80-amarillo] PASSED [ 90%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[81-verde] PASSED [ 92%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_rangos[100-verde] PASSED [ 95%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_error_fuerza_rojo PASSED [ 97%]
+tests/test_semaforo.py::TestCalcularColorSemaforo::test_bulk_commit_penaliza_15 PASSED [100%]
+
+============================= 41 passed in 0.51s ==============================
